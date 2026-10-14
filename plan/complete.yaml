@@ -1,0 +1,11 @@
+# The shared plan, complete analysis: the same at every site. PRELIMINARY (2026-10-14).
+# h2 of every trait and rg between every pair of traits. initial.yaml leaves out
+# rg among the cardiometabolic traits.
+# Keep the settings below the same in both files.
+traits: traits.tsv
+analyses: analyses_complete.tsv
+stratify: [birth_year]
+birth_year_bin: 5
+max_degree: 3
+external_parent_cap: 30
+export_min_count: 5

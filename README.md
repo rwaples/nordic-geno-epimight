@@ -48,6 +48,9 @@ check, and exits 1 if any check fails. Run it before using your own data.
 4. Send `out/6_export/`. Nothing else in `out/` may leave your server: it holds
    individual-level data.
 
+Start with the initial plan. For the complete one, change `plan:` in your site file to
+`../plan/complete.yaml` and use a new output folder.
+
 `pixi run study` runs six steps in order. You can run one at a time with
 `pixi run <step> local/denmark.yaml out/`. To try it on the toy site, use
 `kit/selftest/toy/site.yaml` in place of your site file.
@@ -76,7 +79,7 @@ from your data folder.
 
 ```yaml
 site: Denmark                 # the name your results carry
-plan: ../plan/plan.yaml       # the shared plan
+plan: ../plan/initial.yaml    # the shared plan
 data: /path/to/export/folder  # pedigree.tsv and the trait files
 study_end: 2021-12-31         # end of register follow-up at this site
 pedigree: pedigree.tsv        # optional, the default
@@ -85,11 +88,13 @@ threads: 4                    # optional, default 1
 
 ### Plan
 
-`plan/plan.yaml` holds the settings every site shares:
+Two plan files hold the settings every site shares: `plan/initial.yaml` for the initial
+analysis and `plan/complete.yaml` for the complete one (`plan/README.md`). Each looks
+like this:
 
 ```yaml
 traits: traits.tsv
-analyses: analyses.tsv
+analyses: analyses_initial.tsv
 relative_windows: relative_windows.tsv   # optional
 stratify: [birth_year]                   # pedigree columns, or birth_year
 birth_year_bin: 5                        # default 1

@@ -1,5 +1,5 @@
 # A run reads two files. The site file (local/<site>.yaml, one per country) says where that
-# site's data are and when its follow-up ends; it names the plan file (plan/plan.yaml),
+# site's data are and when its follow-up ends; it names the plan file (plan/initial.yaml),
 # which is the same at every site: the traits, the analyses and the shared settings.
 # Relative paths are resolved from the folder of the file that names them; the pedigree
 # and the trait files from the site's data folder.

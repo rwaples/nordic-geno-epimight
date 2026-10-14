@@ -1,7 +1,7 @@
 # Copy to local/<your site>.yaml and fill in. Files in local/ other than this example are
 # not committed: they describe your site's data.
 site: Denmark                 # the name your results carry
-plan: ../plan/plan.yaml       # the shared plan; leave as is
+plan: ../plan/initial.yaml    # the shared plan: initial.yaml, later complete.yaml
 data: /path/to/export/folder  # pedigree.tsv and one trait file per trait in the plan
 study_end: 2021-12-31         # end of register follow-up at this site
 threads: 4                    # optional, default 1
