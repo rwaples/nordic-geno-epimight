@@ -64,10 +64,13 @@ format_estimate <- function(est, lo, hi, note) {
 }
 
 render_report <- function(out, dir) {
+  # knitr changes into `dir`, so relative paths would no longer resolve.
+  out <- normalizePath(out, mustWork = TRUE)
+  dir <- normalizePath(dir, mustWork = TRUE)
   rmarkdown::render(
     system.file("report.Rmd", package = "nordicepimight", mustWork = TRUE),
-    params = list(out = normalizePath(out)), output_file = "report.html",
-    output_dir = normalizePath(out), intermediates_dir = dir, knit_root_dir = dir,
+    params = list(out = out), output_file = "report.html",
+    output_dir = out, intermediates_dir = dir, knit_root_dir = dir,
     envir = new.env(), quiet = TRUE
   )
 }
