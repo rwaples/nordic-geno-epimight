@@ -1,0 +1,14 @@
+Package: nordicepimight
+Title: Build EPIMIGHT's Cohort Table and Run It on Register Data
+Version: 0.0.1
+Authors@R: person("Ryan", "Waples", email = "ryan.waples@gmail.com", role = c("aut", "cre"))
+Description: The functions behind the nordic-geno-epimight kit's steps: checking the
+    pedigree and trait files, building EPIMIGHT's cohort table, running EPIMIGHT, and
+    writing, summarizing and plotting its results. Installed by the kit's setup step;
+    not meant for CRAN.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.5)
+Imports: data.table, yaml, jsonlite, ggplot2, rmarkdown, epimight, pedigreegraph
+Suggests: testthat (>= 3.0.0)
+Config/testthat/edition: 3
