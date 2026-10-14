@@ -9,6 +9,6 @@ Description: The functions behind the nordic-geno-epimight kit's steps: checking
 License: MIT + file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.5)
-Imports: data.table, yaml, jsonlite, ggplot2, rmarkdown, epimight, pedigreegraph
+Imports: data.table, yaml, ggplot2, scales, knitr, rmarkdown, epimight, pedigreegraph
 Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
