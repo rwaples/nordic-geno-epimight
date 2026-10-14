@@ -27,3 +27,23 @@ pixi run Rscript dev/make_toy.R /tmp/old_pedigree.tsv /tmp/old_pool.tsv selftest
 ```
 
 `python-v0` is a local branch, not on GitHub.
+
+## The cohort-table cases
+
+`cohort_cases/` is a study over the toy's people in which each trait is one set of the
+trait rules: follow-up windows, the relatives' window (with `relative_windows.tsv`
+overrides), each `trait2` rule and action, and `filter_relatives`. Every trait is
+analysed for all eight relationships. `expected/cohort_cases.tsv.gz` is its cohort table
+as the collaborators' `R/make_epimight_tte.R` builds it, one call per trait and
+relationship, with the same pedigree pairs:
+
+```sh
+pixi run Rscript dev/cohort_oracle.R R/make_epimight_tte.R selftest/cohort_cases selftest/expected/cohort_cases.tsv
+gzip -n -9 selftest/expected/cohort_cases.tsv
+```
+
+`pixi run test` checks that the kit's cohort step reproduces it row for row.
+
+The first kit's pool differs from the toy's cohort table in one place: PO for people born
+1900-1909 (3,000 rows). simACE gave their parents outcomes, but the parents are not in
+the study population, and the kit counts only relatives with a trait-file row.

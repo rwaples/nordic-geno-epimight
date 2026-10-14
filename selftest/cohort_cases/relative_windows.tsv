@@ -1,0 +1,6 @@
+trait	relationship	max_followup_relatives
+max20	PO	50
+max20	1C	none
+plain	Av	60
+plain	FS	70
+exclude_before	PO	70

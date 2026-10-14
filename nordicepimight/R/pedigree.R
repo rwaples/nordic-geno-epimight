@@ -43,8 +43,9 @@ read_pedigree <- function(path, stratify, birth_year_bin) {
   list(pedigree = dt, findings = collect(f))
 }
 
-# Runs pedsum validate on the pedigree in `dir`. Returns list(validated, findings): the
-# path of pedsum's validated pedigree, or NULL when the pedigree stops the run.
+# Runs pedsum validate on the pedigree in `dir`. Returns list(validated, findings):
+# pedsum's validated pedigree (id, mother, father as text, external parents added as
+# founders), or NULL when the pedigree stops the run.
 validate_pedigree <- function(pedigree, dir, threads, external_parent_cap, source) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   input <- file.path(dir, "pedsum_input.tsv")
@@ -110,5 +111,10 @@ read_pedsum_findings <- function(dir, status, external_parent_cap, source) {
                       source, log_tail())
     findings <- collect(findings, failed)
   }
-  list(validated = if (has_stop(findings)) NULL else validated, findings = findings)
+  list(validated = if (has_stop(findings)) NULL else read_validated(validated), findings = findings)
+}
+
+read_validated <- function(path) {
+  d <- utils::read.delim(gzfile(path), colClasses = "character", na.strings = "")
+  as.data.table(d)[, .(id, mother, father)]
 }

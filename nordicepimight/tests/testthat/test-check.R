@@ -3,7 +3,7 @@ test_that("the fixture study passes with only the few-cases warning", {
   expect_equal(codes(result, "STOP"), character())
   expect_equal(unique(codes(result, "WARN")), "few_cases")
   expect_setequal(result$inputs$population, paste0("c", 1:6))
-  expect_true(file.exists(result$inputs$validated_pedigree))
+  expect_equal(result$inputs$validated_pedigree[id == "c1", c(mother, father)], c("p2", "p1"))
   expect_equal(result$inputs$pedigree[id == "c1", birth_year], 1950L)
 })
 

@@ -49,5 +49,6 @@ pedsum = { git = "https://github.com/rwaples/pedsum.git", rev = "33405c33995baa5
 [tasks]
 setup = { cmd = "Rscript steps/0_setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }
 check = { cmd = "Rscript steps/1_check.R", description = "Step 1: check the inputs (pixi run check study.yaml OUT/)" }
+cohort = { cmd = "Rscript steps/2_cohort.R", description = "Step 2: build the cohort table (pixi run cohort study.yaml OUT/)" }
 test = { cmd = "Rscript -e 'testthat::test_local(\"nordicepimight\", stop_on_failure = TRUE)'", description = "Unit tests" }
 lint = { cmd = "Rscript -e 'l <- c(lintr::lint_package(\"nordicepimight\"), lintr::lint_dir(\"steps\"), lintr::lint_dir(\"dev\")); print(l); quit(status = length(l) > 0)'", description = "Lint the package and step scripts" }

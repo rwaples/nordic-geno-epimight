@@ -19,3 +19,31 @@ relationship_degree <- function(relationship) {
   codes <- RELATIONSHIPS$pair_codes[match(relationship, RELATIONSHIPS$relationship)]
   vapply(codes, function(c) if (is.null(c)) NA_real_ else max(degree[c]), numeric(1))
 }
+
+# Each person's relatives for the given relationships, from the validated pedigree (its
+# ids are text): data.table(person_id, relative_id, relationship). A directional
+# relationship lists only the person's elders (the pair's second member); the others list
+# every pair both ways.
+relative_pairs <- function(pedigree, relationships) {
+  ids <- pedigree$id
+  graph <- pedigreegraph::pedigree_graph(data.frame(
+    id = seq_along(ids), mother = chmatch(pedigree$mother, ids),
+    father = chmatch(pedigree$father, ids)
+  ))
+  wanted <- RELATIONSHIPS[relationship %in% relationships]
+  pairs <- as.data.table(pedigreegraph::relationship_pairs(
+    graph, categories = unique(unlist(wanted$pair_codes)), progress = FALSE
+  ))
+  pairs[, code := as.character(code)]
+  out <- rbindlist(lapply(seq_len(nrow(wanted)), function(i) {
+    p <- pairs[code %in% wanted$pair_codes[[i]]]
+    both <- if (wanted$directional[i]) {
+      p[, .(person = first_id, relative = second_id)]
+    } else {
+      rbind(p[, .(person = first_id, relative = second_id)],
+            p[, .(person = second_id, relative = first_id)])
+    }
+    unique(both[person != relative])[, relationship := wanted$relationship[i]]
+  }))
+  out[, .(person_id = ids[person], relative_id = ids[relative], relationship)]
+}
