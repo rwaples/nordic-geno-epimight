@@ -1,0 +1,106 @@
+# Where the kit falls short of the SAP
+
+This compares the kit with the first-pass statistical analysis plan,
+`Firstpass_SAP_Scandinavian_Genealogy.txt`. Section numbers refer to the SAP.
+
+The two agree on the core: pedsum validates the pedigree, the trait rules follow
+`make_epimight_tte`, EPIMIGHT estimates h² and rg per birth-year stratum and pools them,
+status is 1 diagnosis, 2 death and 0 censored, a missing parent can be `-1`, the software
+is pinned, and only aggregate tables leave a site.
+
+## What the kit can't do yet
+
+1. **Analysis windows (4.2, 6.3).** The SAP runs everything in four windows, W1 to W4.
+   Each window sets three things:
+   - Which diagnoses count. Only diagnoses made inside the window's years count, so
+     someone first seen in 2004 and again in 2010 is a case in 2010. That needs the
+     diagnosis history, but a trait file has one row per person. Each window would need
+     its own trait files.
+   - A censoring date shared by every country: 31 December 2021 in W2 and W3, 31
+     December 2023 in W4. The kit's `study_end` is set per site.
+   - A proband birth range (item 2).
+
+   W4 is run by Denmark and Sweden only.
+
+2. **Who can be a proband (4.1, 6.3).** Probands are born 1985 to 2005 in W2 and W3 and
+   1932 to 2007 in W4, and they must be born in the country. Older and foreign-born
+   people still count as relatives. The kit has no rule for either restriction.
+
+3. **CMD in the parent generation (4.2).** In W2 and W3, cardiometabolic traits are
+   estimated in the parents of the W2 index persons. The kit can't define probands by
+   their relation to another cohort.
+
+4. **Twins (4.1).** The SAP removes same-multiple-birth pairs from full siblings. The
+   kit counts MZ twins as full siblings (`kit/nordicepimight/R/relationships.R:8`), and
+   the pedigree has no twin or multiple-birth column.
+
+5. **Random-effects pooling across birth years (6.6).** The kit pools with fixed effects
+   (`kit/nordicepimight/R/epimight.R:7`). EPIMIGHT's random-effects weight is
+   1/(se² + var(estimates)), the sample variance of the stratum estimates rather than a
+   between-stratum variance such as DerSimonian-Laird's τ² (`R/Analysis-class.R:104` at
+   the pinned commit `55803e1`). It also needs at least two strata
+   (`R/Pipeline-class.R:257`). This needs settling before the kit switches.
+
+6. **Combining the two rg directions (6.5).** The SAP runs rg in both directions and
+   combines them. The kit reports each direction separately.
+
+7. **Disclosure (8).** The SAP uses each country's own minimum cell size (11 in Sweden,
+   5 in Denmark and Norway) and merges small cells into adjacent birth years. The kit
+   has one `export_min_count` in the shared plan, its tests require the same value in
+   both plan files, and it suppresses or drops small cells instead of merging.
+
+8. **Genealogy outputs (6.1, Steps 1 and 2).** The SAP wants pedsum summarize and parent
+   completeness by birth decade, for the full pedigree and the W2 and W4 cohorts. The
+   kit runs only pedsum validate, and does not export its output.
+
+9. **Descriptive statistics (6.2, Step 3).** The SAP wants incidence by birth year and
+   age and by diagnosis year and age, by sex, and prevalence among people alive and
+   living in the country on 1 January. Prevalence needs residence and death data the
+   kit doesn't take. `R/Summarise_incidence.R` bins case counts, with no sex split and
+   no denominators.
+
+## Where the plan differs from the SAP
+
+The kit supports each of these; only `plan/` has to change.
+
+1. **Relationships (Table 5).** For mental traits the primary is full siblings, with
+   parents, maternal and paternal half siblings, first cousins, aunts and uncles, and
+   grandparents as replication. The plan uses FS, HS and PO for every trait. The SAP
+   leaves the CMD row of Table 5 empty.
+2. **rg pairs (6.5).** Mental x mental uses full siblings, mental x CMD uses the index
+   person and their parent, and an extra analysis pairs the supplementary CVD traits
+   (not the combined ones). The plan runs FS, HS and PO for every pair.
+3. **Birth-year strata (6.3, 6.4).** The SAP estimates per birth year; the plan uses
+   5-year bins. Single years multiply the strata, and EPIMIGHT's run time at register
+   scale is not yet measured.
+4. **Main and supplementary traits (Table 3).** `plan/traits.tsv` doesn't mark which is
+   which.
+
+## Left to each site's data preparation
+
+The kit can't check these, so the README should state them:
+
+- Remove adoptive links from parent-offspring and sibling relationships.
+- Same-sex parents: keep the birth mother where known and set the other parent missing.
+- Ignore MDD, BD and SCZ diagnoses before age 10. This needs the diagnosis history.
+- The lower age limit for ASD is still open in the SAP.
+
+The SAP proposes removing anyone ever diagnosed with BD from MDD cases. The kit's
+`exclude_trait2: any` drops those people instead of keeping them as non-cases, and its
+competing-risk action needs `before`, so the proposed competing-risk sensitivity
+analysis can't use "ever".
+
+## Output format
+
+- The SAP asks for one file per estimate, such as
+  `{country}_h2_{phenotype}_{familyType}_{window}.tsv`. The kit writes one long table
+  per kind, which can be split.
+- The SAP doesn't say which standard error to report. The kit reports the sandwich SE
+  and keeps EPIMIGHT's native SE only for comparison.
+
+## The decision most of this depends on
+
+Items 1 to 3 are one design question: is a window part of the plan (diagnosis years,
+censoring date, proband birth range, the countries that run it), or does each site
+prepare one data folder per window? Items 4, 5 and 7, and the rg pairs, need the
+collaborators' answers.

@@ -251,5 +251,6 @@ one.
   toy site, expected results and the scripts that build them. `pixi run test` and
   `pixi run lint` check the package.
 - `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
-- `docs/`: the glossary, design decisions (`adr/`), open questions, and the
-  collaborators' guide and statistical analysis plan.
+- `docs/`: the glossary, design decisions (`adr/`), open questions, the collaborators'
+  guide and statistical analysis plan (SAP), and where the kit falls short of the SAP
+  (`SAP_kit_gaps.md`).
