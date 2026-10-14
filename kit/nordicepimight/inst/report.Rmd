@@ -1,0 +1,120 @@
+---
+title: "EPIMIGHT results"
+output:
+  html_document:
+    self_contained: true
+    toc: true
+    toc_depth: 2
+    toc_float: false
+    mathjax: null
+params:
+  out: "."
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 8,
+                      dpi = 96)
+suppressPackageStartupMessages({
+  library(data.table)
+  library(nordicepimight)
+})
+out <- params$out
+run <- yaml::read_yaml(file.path(out, "run.yaml"))
+stratify <- unlist(run$settings$stratify)
+analyses <- rbindlist(lapply(run$analyses, as.data.table))
+text_columns <- list(character = stratify)
+read <- function(name) fread(file.path(out, name), colClasses = text_columns, na.strings = "NA")
+h2 <- read("h2.tsv")
+rg <- read("rg.tsv")
+cif <- read("cif.tsv")
+counts <- read("cohort_summary.tsv")
+heading <- function(level, text) cat("\n\n", strrep("#", level), " ", text, "\n\n", sep = "")
+table_of <- function(d) print(knitr::kable(d, format = "html", table.attr = "class=\"table\""))
+age_span <- function(lo, hi) ifelse(is.na(lo), "", ifelse(lo == hi, lo, paste(lo, hi, sep = "-")))
+estimate_rows <- function(d, estimate) {
+  d[, .(stratum = stratum_label(d, stratify), ages = age_span(age_min, age_max),
+        estimate = format_estimate(get(estimate), l95_sandwich, u95_sandwich),
+        se_native = signif(se_native, 3), note = ifelse(is.na(note), "", note))]
+}
+version_of <- function(pkg) {
+  sprintf("%s (%s)", run$installed[[pkg]]$version, substr(run$installed[[pkg]]$commit, 1, 7))
+}
+```
+
+# Run
+
+```{r run, results = "asis"}
+table_of(data.table(
+  item = c("site", "plan checksum", "study population", "EPIMIGHT", "pedigreegraph", "R",
+           "stratified by", "pooling", "EPIMIGHT calls", "warnings at check"),
+  value = c(run$site, run$plan_checksum, run$population,
+            version_of("epimight"), version_of("pedigreegraph"),
+            run$r_version, paste(stratify, collapse = ", "), run$settings$pooling,
+            sprintf("%d (%d ok, %d expected stops)", run$epimight$calls, run$epimight$ok,
+                    run$epimight$expected_stops),
+            if (length(run$warnings) == 0) "none" else paste(names(run$warnings), collapse = ", "))
+))
+```
+
+Estimates are shown with their pedigree-pair sandwich 95% interval; `se_native` is
+EPIMIGHT's own standard error, for comparison.
+
+# Analyses
+
+```{r analyses, results = "asis", fig.height = 3.2}
+for (k in seq_len(nrow(analyses))) {
+  a <- analyses[k]
+  if (a$analysis == "h2") {
+    heading(2, sprintf("%s: h² of %s, %s", a$analysis_id, a$trait, a$relationship))
+    rows <- h2[analysis_id == a$analysis_id]
+    table_of(estimate_rows(rows, "h2"))
+    print(plot_forest(rows, "h2", stratify))
+    traits <- a$trait
+  } else {
+    heading(2, sprintf("%s: rg of %s on %s relatives with %s", a$analysis_id, a$trait,
+                       a$relationship, a$relatives_trait))
+    rows <- rg[analysis_id == a$analysis_id]
+    table_of(estimate_rows(rows, "rg"))
+    print(plot_forest(rows, "rg", stratify))
+    traits <- c(a$trait, a$relatives_trait)
+  }
+  curves <- cif[analysis_id == a$analysis_id]
+  if (nrow(curves) > 0) print(plot_cif(curves, stratify))
+  table_of(counts[trait %in% traits & relatives_kind == a$relationship])
+}
+```
+
+# h² by trait
+
+```{r h2-forests, results = "asis", fig.height = 3.6}
+for (t in unique(h2$trait)) {
+  heading(2, t)
+  print(plot_forest(h2[trait == t], "h2", stratify, colour = "relationship",
+                    title = sprintf("h² of %s", t)))
+}
+```
+
+# rg by relationship
+
+```{r rg-heatmaps, results = "asis", fig.height = 4}
+if (nrow(rg) == 0) cat("No rg analyses.\n")
+for (r in unique(rg$relationship)) {
+  heading(2, r)
+  print(plot_rg_heatmap(rg, r))
+}
+```
+
+# Summary
+
+```{r summary, results = "asis"}
+pooled_h2 <- h2[level == "pooled", .(analysis_id, estimate = "h2", traits = trait, relationship,
+                                     strata = n_strata,
+                                     value = format_estimate(h2, l95_sandwich, u95_sandwich),
+                                     note = ifelse(is.na(note), "", note))]
+pooled_rg <- rg[level == "pooled", .(analysis_id, estimate = "rg",
+                                     traits = paste(index_trait, "on", relatives_trait),
+                                     relationship, strata = n_strata,
+                                     value = format_estimate(rg, l95_sandwich, u95_sandwich),
+                                     note = ifelse(is.na(note), "", note))]
+table_of(rbind(pooled_h2, pooled_rg))
+```

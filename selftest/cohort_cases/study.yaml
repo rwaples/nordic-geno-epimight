@@ -1,9 +1,0 @@
-# The cohort-table cases: every trait rule, compared row for row with make_epimight_tte
-# (dev/cohort_oracle.R writes ../expected/cohort_cases.tsv). Same people as the toy.
-pedigree: ../toy/pedigree.tsv
-traits: traits.tsv
-analyses: analyses.tsv
-relative_windows: relative_windows.tsv
-study_end: 2023-12-31
-stratify: [birth_year]
-max_degree: 3

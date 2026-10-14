@@ -1,9 +1,0 @@
-# The self-test's toy study. Paths are relative to this file.
-pedigree: pedigree.tsv
-traits: traits.tsv
-analyses: analyses.tsv
-study_end: 2023-12-31
-stratify: [birth_year]
-birth_year_bin: 25
-threads: 2
-max_degree: 3

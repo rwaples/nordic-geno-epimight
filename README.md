@@ -1,11 +1,17 @@
 # nordic-geno-epimight
 
-Estimates heritability (h²) and genetic correlation (rg) from register data with
+Runs one shared analysis plan on the registers of several Nordic countries. Each site
+estimates heritability (h²) and genetic correlation (rg) with
 [EPIMIGHT](https://github.com/BioPsyk/epimight), using pedigree-pair sandwich standard
-errors. You provide a pedigree, one file per trait, a trait list and an analysis list.
-The kit checks them, builds EPIMIGHT's input, runs EPIMIGHT, and writes tables and an
-HTML report. It runs in R, except the pedigree check, which uses
+errors, and sends back one folder of aggregate results with small counts suppressed.
+
+Everything is shared except the data. `plan/` lists the traits and the analyses and is
+the same at every site. Each site writes one file in `local/` saying where its data are.
+The kit checks the data, builds EPIMIGHT's input, runs EPIMIGHT, and writes tables, an
+HTML report and the folder to share. It runs in R; the pedigree check uses
 [pedsum](https://github.com/rwaples/pedsum).
+
+The plan and the export rules are **preliminary**.
 
 ## Install
 
@@ -18,22 +24,33 @@ pixi run selftest selftest-out/
 ```
 
 `setup` downloads and compiles EPIMIGHT and pedigreegraph at the commits pinned in
-`nordicepimight/inst/pins.yaml`. It needs internet access and takes about 3 minutes the
-first time. Every run checks that the installed versions match the pins.
+`kit/nordicepimight/inst/pins.yaml`. It needs internet access and takes about 3 minutes
+the first time. Every run checks that the installed versions match the pins.
 
-`selftest` runs the kit on a simulated toy study and compares its results with values
+`selftest` runs the kit on a simulated toy site and compares its results with values
 computed independently. It takes about 2 minutes, prints one PASS, FAIL or SKIP line per
 check, and exits 1 if any check fails. Run it before using your own data.
-`selftest/README.md` describes each check.
+`kit/selftest/README.md` describes each check.
 
-## Run a study
+## Run at your site
 
-```sh
-pixi run study selftest/toy/study.yaml out/
-```
+1. Prepare your data folder: `pedigree.tsv` and one trait file per trait in
+   `plan/traits.tsv`, named as its `file` column says (`MDD.tsv`, ...). The formats are
+   below.
+2. Copy `local/example.yaml` to `local/<your site>.yaml` and fill it in. Files in `local/`
+   are not committed.
+3. Run every step:
 
-This runs five steps in order. You can also run one at a time with
-`pixi run <step> study.yaml out/`.
+   ```sh
+   pixi run study local/denmark.yaml out/
+   ```
+
+4. Send `out/6_export/`. Nothing else in `out/` may leave your server: it holds
+   individual-level data.
+
+`pixi run study` runs six steps in order. You can run one at a time with
+`pixi run <step> local/denmark.yaml out/`. To try it on the toy site, use
+`kit/selftest/toy/site.yaml` in place of your site file.
 
 | Step | Output | Does |
 |---|---|---|
@@ -42,6 +59,7 @@ This runs five steps in order. You can also run one at a time with
 | `epimight` | `out/3_epimight/` | Runs EPIMIGHT once for each estimate the analyses need |
 | `tables` | `out/*.tsv`, `out/run.yaml` | Writes the result tables |
 | `report` | `out/report.html` | Writes one page with every result and plot |
+| `export` | `out/6_export/` | Writes the folder to share, with small counts suppressed |
 
 Each step needs the previous one to have finished. Rerunning a step deletes the output of
 the steps after it. If an input file changes after `check`, the later steps stop until you
@@ -51,28 +69,40 @@ rerun `check`.
 
 All tables are tab-separated with a header row. A missing value is `NA` or an empty cell.
 Ids are text, so `001`, `1` and `1.0` are three different people. Relative paths are
-resolved from the folder of the file that names them.
+resolved from the folder of the file that names them; the pedigree and the trait files
+from your data folder.
 
-### study.yaml
+### Site file
 
 ```yaml
-pedigree: pedigree.tsv
+site: Denmark                 # the name your results carry
+plan: ../plan/plan.yaml       # the shared plan
+data: /path/to/export/folder  # pedigree.tsv and the trait files
+study_end: 2021-12-31         # end of register follow-up at this site
+pedigree: pedigree.tsv        # optional, the default
+threads: 4                    # optional, default 1
+```
+
+### Plan
+
+`plan/plan.yaml` holds the settings every site shares:
+
+```yaml
 traits: traits.tsv
 analyses: analyses.tsv
 relative_windows: relative_windows.tsv   # optional
-study_end: 2023-12-31                    # end of register follow-up
 stratify: [birth_year]                   # pedigree columns, or birth_year
-birth_year_bin: 5                        # optional, default 1
-threads: 4                               # optional, default 1
-max_degree: 3                            # optional, 1 to 5, default 3
-external_parent_cap: 30                  # optional, default 30
+birth_year_bin: 5                        # default 1
+max_degree: 3                            # 1 to 5, default 3
+external_parent_cap: 30                  # default 30
+export_min_count: 5                      # default 5
 ```
 
 EPIMIGHT estimates each stratum separately and then pools them. `birth_year` is the year
 of `birth_date`, grouped into `birth_year_bin`-year bins named by their first year.
 
 `max_degree` sets which relative pairs enter the sandwich SE. It must reach the furthest
-relationship you analyse: 1 for PO and FS, 2 for HS, mHS, pHS, Av and 1G, 3 for 1C.
+relationship analysed: 1 for PO and FS, 2 for HS, mHS, pHS, Av and 1G, 3 for 1C.
 
 A parent id without its own row is added as a founder. If it has more children than
 `external_parent_cap`, the run stops, because it is probably a code for an unknown parent.
@@ -100,7 +130,7 @@ Ages may have fractions. EPIMIGHT uses whole years.
 All trait files must list the same people. If you exclude someone from a trait, keep their
 row and censor it (status 0) at the age they leave follow-up.
 
-### traits.tsv
+### plan/traits.tsv
 
 One row per trait. A trait is a name, a file and optional rules. Several traits can share
 a file.
@@ -109,7 +139,7 @@ a file.
 |---|---|
 | `trait` | Name used in the analyses: letters, digits, `_`, `.` or `-` |
 | `type` | `tte` (time to event), the only type so far |
-| `file` | The trait file |
+| `file` | The trait file's name in each site's data folder |
 | `min_followup` | Drop probands born fewer than this many years before `study_end` |
 | `max_followup` | Follow every proband for this many years. Drop those born too late, and censor later events at this age |
 | `max_followup_relatives` | The same window for relatives. Empty means the same as `max_followup`; `none` means no window |
@@ -134,7 +164,7 @@ bip        tte   bip.tsv
 `adhd_fu20` and `adhd_fu30` follow the same people for 20 and 30 years. In `mdd`, a BIP
 onset before MDD ends MDD follow-up as a competing event.
 
-### relative_windows.tsv
+### plan/relative_windows.tsv
 
 Optional. Sets `max_followup_relatives` for one trait and relationship. This row follows
 parents for 50 years while probands get 20:
@@ -144,7 +174,7 @@ trait      relationship  max_followup_relatives
 adhd_fu20  PO            50
 ```
 
-### analyses.tsv
+### plan/analyses.tsv
 
 One row per estimate, with `analysis_id, analysis, trait, relatives_trait, relationship`.
 `analysis_id` is your name for the estimate and appears on every output row.
@@ -177,11 +207,21 @@ the unrounded values.
 | `rg.tsv` | The same for rg, plus `rhh` and both h2 values at the age rg uses |
 | `cif.tsv` | The cumulative incidence curves each analysis uses |
 | `cohort_summary.tsv` | Probands, outcomes and relatives per trait, relationship and stratum |
-| `run.yaml` | Versions, input checksums, settings, warnings and EPIMIGHT's calls |
+| `run.yaml` | Site, plan checksum, versions, input checksums, settings, warnings and EPIMIGHT's calls |
 
 Report the sandwich interval. `se_native` treats relatives as independent and is there
 only for comparison. When EPIMIGHT can't estimate a stratum or an analysis, its row stays
 with NA and a note giving the reason.
+
+### The folder to share
+
+`out/6_export/` holds the five files above and a report built from them. Every count
+from 1 to `export_min_count` (5) is suppressed: such cells in `cohort_summary.tsv` are
+NA, and so are the other two of cases, competing and censored when one of them is, since
+they sum to the probands. CIF rows whose cumulative cases are 1 to 5 are left out.
+`run.yaml` names the input files without their paths and records what was suppressed.
+These rules are preliminary: nothing yet covers small differences between neighbouring
+cells, such as one new case between two ages of a CIF curve.
 
 ## When a run stops
 
@@ -200,10 +240,11 @@ one.
 
 ## Repository layout
 
-- `R/`, `docs/`, `Definitions/`: the collaborators' scripts, guide and phenotype
-  definitions.
-- `nordicepimight/`: the kit's R package. `pixi run test` and `pixi run lint` check it.
-- `steps/`: one script per step.
-- `selftest/`: the toy study and its expected results.
-- `GLOSSARY.md`, `docs/adr/`: terms and design decisions.
-- `docs/open-questions.md`: questions for the collaborators that may change the kit.
+- `plan/`: the shared analysis plan.
+- `local/`: each site's file (not committed), and `example.yaml`.
+- `kit/`: the kit's R package (`nordicepimight/`), its setup script, and the self-test's
+  toy site, expected results and the scripts that build them. `pixi run test` and
+  `pixi run lint` check the package.
+- `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
+- `docs/`: the glossary, design decisions (`adr/`), open questions, and the
+  collaborators' guide and statistical analysis plan.

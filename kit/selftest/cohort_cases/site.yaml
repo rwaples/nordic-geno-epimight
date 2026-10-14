@@ -1,0 +1,5 @@
+# The cohort-table cases run on the toy site's data.
+site: cohort_cases
+plan: plan.yaml
+data: ../toy/data
+study_end: 2023-12-31

@@ -1,0 +1,8 @@
+# The cohort-table cases: every trait rule, compared row for row with make_epimight_tte
+# (kit/selftest/build/cohort_oracle.R writes ../expected/cohort_cases.tsv). Same people as
+# the toy.
+traits: traits.tsv
+analyses: analyses.tsv
+relative_windows: relative_windows.tsv
+stratify: [birth_year]
+max_degree: 3
