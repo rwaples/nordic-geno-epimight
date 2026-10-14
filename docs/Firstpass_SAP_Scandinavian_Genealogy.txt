@@ -1,0 +1,218 @@
+# Statistical Analysis Plan (SAP)
+
+Scandinavian genealogy: heritability and genetic correlation of mental and cardiometabolic disorders in Denmark, Sweden and Norway
+
+*Coordinating centre: Institute of Biological Psychiatry, Roskilde*
+
+# 1. Aim and set-up
+
+We estimate heritability (h2) and genetic correlation (rg) of mental and cardiometabolic disorders (CMD) in Denmark, Sweden and Norway using national genealogies, and compare the countries. Earlier work covered Denmark and Sweden only and read estimates off each country's own register coverage (Meijsen et al., Nat Commun 2024 and 2025). Here every country runs the same analyses with the same software, inside a birth cohort and observation period that all three countries share.
+
+- Each country runs the analyses on its own server and returns only aggregate, disclosure-checked tables. No individual-level data leave a country.
+
+- Fixed software for all countries: pedsum (genealogy), the shared make_epimight_tte function (EPIMIGHT input) and EPIMIGHT (h2, rg), each at one agreed version.
+
+- Every analysis is run in four windows: W1 (entire dataset), W2 (birth cohort and observation period common to all three countries, set by Norway), W3 (as W2, inpatient diagnoses only) and W4 (largest birth cohort and observation period common to Denmark and Sweden). W2 is primary for all comparisons between countries.
+
+# 2. Objectives
+
+1.  **O1. Genealogy.** Describe each national genealogy (size, depth, completeness, relative pairs) with pedsum.
+
+2.  **O2. Descriptive statistics.** Incidence and prevalence of every phenotype by sex, age and period.
+
+3.  **O3. Heritability.** Liability-scale h2 per phenotype and country, from several relationship types.
+
+4.  **O4. Genetic correlation.** rg for mental x CMD and within-domain pairs, from several relationship types.
+
+5.  **O5. Comparison.** Meta-analysis across countries and between-country heterogeneity, W2 versus W1, W3 and W4.
+
+# 3. Data sources
+
+| Item                                   | Denmark                                                | Sweden                                              | Norway                                          |
+|----------------------------------------|--------------------------------------------------------|-----------------------------------------------------|-------------------------------------------------|
+| Civil register                         | CPR (1968 onwards)                                     | Total Population Register (1968 onwards)            | Population Register (1960 onwards)              |
+| Parent links                           | CPR; MGR-beta (births from 1920); MGR-lite (from 1953) | Multi-Generation Register (born 1932 or later)      | Population-register parent links (1960 onwards) |
+| Inpatient diagnoses from               | Psychiatric 1969, somatic 1977                         | Psychiatric 1973, somatic 1964 (national 1987)      | 2008                                            |
+| Outpatient diagnoses from              | 1995                                                   | 2001                                                | 2008                                            |
+| ICD versions                           | ICD-8 to 1993, ICD-10 from 1994                        | ICD-8 to 1986, ICD-9 1987 to 1996, ICD-10 from 1997 | ICD-10 from 2008                                |
+| Primary care diagnoses                 | No                                                     | Stockholm and Västra Götaland only                  | Nationwide from 2006                            |
+| Death, emigration, household registers | Yes                                                    | Yes                                                 | Yes                                             |
+| Adoption information                   | Partial (ADOP 1988 to 2009, plus proxies)              | Yes                                                 | to complete                                     |
+| Twin flag                              | Yes (Medical Birth Register)                           | Yes                                                 | Yes                                             |
+| Last follow-up                         | 31-12-2023                                             | 31-12-2024                                          | 31-12-2021                                      |
+| Minimum cell size                      | 5                                                      | 11                                                  | 5                                               |
+
+*Table 1. Register coverage. Norway sets the overlap of all three countries: diagnoses from 2008, follow-up to 2021, parent links from 1960. Denmark and Sweden overlap from 2001 (Swedish outpatient start, both ICD-10) to 2023 (Danish follow-up end).*
+
+# 4. Study population and analysis windows
+
+## 4.1 Inclusion and exclusion
+
+- Genealogy: everyone in the civil register with a valid birth date and sex, and all their recorded parents.
+
+- Adoptive links are removed from parent-offspring and sibling relationships.
+
+- Same-sex parents: keep the birth mother where the birth register identifies her; set the other parent to missing.
+
+- Index persons must be born in the country (epimight analyses). People born abroad still appear as relatives.
+
+- Same-multiple-birth pairs are removed from full siblings (pedsum codes MZ twins as full siblings).
+
+- MDD, bipolar disorder and schizophrenia: diagnoses before age 10 are ignored.
+
+- Status: 1 = diagnosis, 2 = death (competing risk), 0 = censored (emigration or end of observation).
+
+> **Open decision.** Lower age limit for ASD (for example age 4), and how to handle same-sex parent links where the birth mother is unknown.
+
+## 
+
+## 
+
+## 
+
+## 4.2 The four windows
+
+|                   | Window 1: Entire dataset                              | Window 2: Common to all three countries (primary)                                        | Window 3: As W2, inpatient only         | Window 4: Common to Denmark and Sweden                                           |
+|-------------------|--------------------------------------------------------|-------------------------------------------------------------------------------------------|------------------------------------------|-----------------------------------------------------------------------------------|
+| Countries         | DK, SE, NO                                             | DK, SE, NO                                                                                | DK, SE, NO                               | DK, SE                                                                            |
+| Index persons     | All birth cohorts with linked parents                  | Born 1985 to 2005                                                                         | As W2                                    | Born 1932 to 2007                                                                 |
+| Observation time  | All register years in that country                     | 1 January 2008 to 31 December 2021                                                        | As W2                                    | 1 January 2001 to 31 December 2023                                                |
+| Diagnoses counted | All years and ICD versions                             | Only those made 2008 to 2021 (ICD-10). In DK and SE all diagnoses before 2008 are ignored | As W2, inpatient diagnoses only          | Only those made 2001 to 2023 (ICD-10). All diagnoses before 2001 are ignored      |
+| Relatives         | Any birth year; affected at any time                   | Any birth year; affected only if diagnosed 2008 to 2021                                   | As W2, inpatient diagnoses only          | Any birth year; affected only if diagnosed 2001 to 2023                           |
+| Used for          | Best estimate per country; link to published estimates | All comparisons between countries                                                         | Do outpatient differences drive results? | Larger DK and SE comparison: more cohorts, longer follow-up, CMD in index persons |
+
+*Table 2. Analysis windows.*
+
+**Why W2 looks like this.** W2 is set by Norway. Norway has hospital diagnoses only from 2008 and follow-up to 2021, so 1 January 2008 to 31 December 2021 is the observation period all three countries share. To make the Danish and Swedish cohorts comparable to Norway, all diagnoses an individual received before 2008 are ignored in Denmark and Sweden, for index persons and relatives alike. A Danish or Swedish person first diagnosed in 2004 and seen again in 2010 therefore counts as a case in 2010, as Norway would record them. People born 1985 to 2005 are observed in that period at the ages when mental disorders start (each cohort for 14 years of age: born 1985 at ages 23 to 36, born 2005 at ages 3 to 16), they have linked parents in all three countries, and their childhood is covered by the Danish household register (from 1985). People born before 1985 enter W2 only as relatives.
+
+**Why W3 looks like this.** W3 is W2 restricted to inpatient diagnoses, in all three countries. Inpatient and outpatient practice differ most between the countries, so W3 shows whether differences in W2 come from outpatient care.
+
+**Why W4 looks like this.** W4 is the largest birth cohort and observation period that Denmark and Sweden share. Both countries record inpatient and outpatient diagnoses in ICD-10 from 2001 (the Swedish outpatient register starts in 2001), and Danish follow-up ends on 31 December 2023, so W4 runs from 1 January 2001 to 31 December 2023. Swedish data are cut at 2023. As in W2, all diagnoses before 2001 are ignored in both countries. Index persons are born 1932 (first cohort of the Swedish Multi-Generation Register) to 2007 (last cohort that reaches age 16 by 2023). W4 has more cohorts and nine more years of follow-up than W2 and is used to test whether differences between Denmark and Sweden in W2 hold in a larger sample.
+
+**Cardiometabolic traits.** W2 and W3 index persons are too young for most CMD. CMD in W2 and W3 is therefore estimated in the parent generation of the W2 index persons (aged about 30 to 85 in 2008 to 2021), using their siblings and parents as relatives. Mental x CMD rg pairs the W2 index person (mental trait) with their parent (CMD). W4 index persons are observed up to age 91, so CMD in W4 is estimated in the index persons themselves.
+
+> **Open decision.** W4 first birth year. 1932 uses every cohort in the Swedish Multi-Generation Register, but Danish parent links before 1953 come from MGR-beta (church books) and may be less complete. Starting at 1953 gives more complete links in both countries but fewer cohorts.
+
+# 5. Phenotypes
+
+Phenotypes follow the shared mapping *ICD_codes_Mental_CVD v.14.6.2026.xlsx*: any inpatient or outpatient hospital contact with the code as primary or secondary diagnosis; the first contact defines age at onset.
+
+| Domain          | Main traits                                                                     | Supplementary traits                                                                                                                                                              |
+|-----------------|---------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Mental          | MDD; autism spectrum disorder (ASD); bipolar disorder (BD); schizophrenia (SCZ) | Schizophrenia spectrum                                                                                                                                                            |
+| Cardiometabolic | CVD combined; CMD combined; any stroke; type 2 diabetes; myocardial infarction  | Ischaemic heart disease; heart failure; atrial fibrillation/flutter; peripheral artery disease; obesity; dyslipidaemia; essential hypertension; haemorrhagic and ischaemic stroke |
+
+*Table 3. Phenotypes.*
+
+W2, W3 and W4 use ICD-10 only.
+
+> **Open decision.** Comorbid disorders such as MDD and BD. Proposal: remove anyone ever diagnosed with BD from MDD cases, using the trait2 options of the EPIMIGHT script; competing-risk recoding as sensitivity.
+
+# 6. Analyses
+
+| Step | What                                     | Tool                | Windows                          | Returned                                           |
+|------|------------------------------------------|---------------------|----------------------------------|----------------------------------------------------|
+| 1    | Build and validate the national pedigree | pedsum validate     | All                              | Error counts; parent completeness by birth decade  |
+| 2    | Describe the genealogy                   | pedsum summarize    | Full pedigree, W2 and W4 cohorts | Pedigree summaries                                 |
+| 3    | Descriptive incidence and prevalence     | Own scripts         | Common period                    | Cases and person-years by sex, age band, period    |
+| 4    | Build the EPIMIGHT input                 | make_epimight_tte   | W1 to W4                         | Summary counts only                                |
+| 5    | Heritability                             | EPIMIGHT run_h2     | W1 to W4                         | K, KR, h2, SE per trait, relative kind, birth year |
+| 6    | Genetic correlation                      | EPIMIGHT run_rg     | W1 to W4                         | rg, SE per trait pair, relative kind, birth year   |
+| 7    | Meta-analysis and heterogeneity          | Coordinating centre | W1 to W4                         | (central)                                          |
+
+*Table 4. Overview of analyses. Steps 1 to 6 are run in each country.*
+
+## 6.1 Genealogy (Steps 1 and 2)
+
+Each country builds one pedigree file (id, sex, mother, father, birth year; **-1** for a missing parent/information), validates it with pedsum, and summarises it for the full pedigree and for the W2 cohort with their relatives. The summaries give Table 1 and Figure 1 of the paper.
+
+Return the summary as: {country}\_Genealogysummary\_{window}.tsv
+
+## 6.2 Descriptive statistics (Step 3)
+
+For each phenotype, countries report incidence and prevalence in two groups:
+
+1.  **The whole population** of each country.
+
+2.  **The W2 cohort** (born 1985 to 2005).
+
+3.  **The W4 cohort** (born 1932 to 2007, Denmark and Sweden).
+
+Both are reported by sex (all, men, women), by age and calendar year.
+
+- **Incidence:** Countries return the number of new cases per birth year by age of diagnosis. Each individual is just counted once.
+
+- **Incidence:** Countries return the number of new cases per year of diagnosis by age of diagnosis. Each individual is just counted once.
+
+- **Prevalence:** the share of people alive and living in the country on 1 January of each year who have ever had the diagnosis since 2008 (since 2001 for the W4 cohort). Countries return the number of people with the diagnosis and the number of people in the population.
+
+Return result as: {country}\_lexisData_Incidencen_YOB\_{window}.tsv
+
+Return result as: {country}\_lexisData_Incidencen_YODx\_{window}.tsv
+
+## 6.3 EPIMIGHT input (Step 4)
+
+- make_epimight_tte builds the input for one trait and one relative kind per call; the calls are combined into one pool for EPIMIGHT.
+
+- The window is applied to the phenotype table before the call: for W2, only diagnoses made 2008 to 2021 count and everyone is censored at 31 December 2021 (W3 also drops outpatient diagnoses; W4 uses 2001 to 2023). Relatives' status comes from the same table, so the window applies to them too.
+
+- The function is run on everyone, and the output is then restricted to the probands of the window (born 1985 to 2005 in W2 and W3, 1932 to 2007 in W4), so that older relatives are still counted.
+
+- W2, W3 and W4 are estimated per birth year with the current function. An estimate at a fixed reference age needs delayed entry, which EPIMIGHT does not yet support.
+
+## 6.4 Heritability (Step 5)
+
+Liability-scale h2 from the population risk (K) and the risk in persons with an affected relative (KR), per relationship type, per birth year, then pooled across birth years.
+
+| Trait group | Primary       | Replication                                                                          |
+|-------------|---------------|--------------------------------------------------------------------------------------|
+| Mental      | Full siblings | Parents; Maternal and paternal half siblings; First cousins, avuncular, grandparents |
+| CMD         |               |                                                                                      |
+
+*Table 5. Relationship types. Relatedness 0.5 for full siblings and parents, 0.25 for half siblings, aunts/uncles and grandparents, 0.125 for first cousins.*
+
+return the results as: {country}\_h2\_{phenotype}\_{familyType}\_{window}.tsv
+
+Each file should include the meta-analysed h2 and the per year h2.
+
+## 6.5 Genetic correlation (Step 6)
+
+rg from the cross-trait familial risk (trait 2 in relatives of persons with trait 1), run in both directions and combined. Do this for all mental and somatic disorder combinations.
+
+Mental x mental pairs use full siblings (heritability).
+
+Mental x CMD pairs use the index person and their parent.
+
+Extra analysis run genetic correlation between mental disorders and between all secondary CVD traits (to avoid overlap between the “combined” groups).
+
+Return the results as: {country}\_rg\_{phenotypes1_phenotypes2}\_{familyType}\_{window}.tsv
+
+## 6.6 Meta-analysis and heterogeneity (Step 7)
+
+- Within each country: random-effects meta-analysis across birth years.
+
+- Across countries: random-effects meta-analysis, Cochran Q and I2, pairwise country differences.
+
+- A difference between countries is claimed only if it is present in W2. A difference seen in W1 but not in W2 is reported as an effect of register coverage.
+
+- W4 compares Denmark and Sweden only. A difference between the two that appears in both W2 and W4 is supported by more cohorts and longer follow-up.
+
+# 7. Sensitivity analyses
+
+- W1 versus W2 versus W3 versus W4.
+
+- Removing individuals with specific comorbidity Dx such as MDD and BD, BD and SCZ etc
+
+# 8. Disclosure and outputs
+
+- No cell below the national minimum (5 in Denmark and Norway, 11 in Sweden) is exported; small cells are merged across adjacent birth years.
+
+| Item     | Content                                                                                   |
+|----------|-------------------------------------------------------------------------------------------|
+| Table 1  | Genealogy characteristics per country                                                     |
+| Figure 1 | Register coverage per country with the W2 and W4 areas marked                             |
+| Figure 2 | Descriptive incidence and prevalence                                                      |
+| Figure 3 | h2 per trait and relationship type, per country and meta-analysed (W2, with W1 alongside) |
+| Figure 4 | rg heat map mental x CMD with between-country heterogeneity                               |
+
+*Table 6. Planned tables and figures.*
