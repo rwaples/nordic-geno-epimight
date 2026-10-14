@@ -68,7 +68,7 @@ read_traits <- function(path) {
     flag(is.na(t$file), "trait_file_missing", "no trait file given", path, t$trait)
   )
   # Trait files are relative to traits.tsv.
-  t[, file_path := ifelse(is.na(file), NA_character_, file.path(dirname(path), file))]
+  t[, file_path := ifelse(is.na(file), NA_character_, resolve_path(dirname(path), file))]
   f <- c(f, list(flag(!is.na(t$file) & !file.exists(t$file_path), "trait_file_missing",
                       "trait file not found", path, t$file_path)))
   t[!is.na(file_path) & file.exists(file_path), file_path := normalizePath(file_path)]
@@ -142,7 +142,7 @@ read_analyses <- function(path, traits, max_degree) {
     flag(!(a$relationship %in% RELATIONSHIPS$relationship), "relationship_unknown",
          RELATIONSHIP_CHOICE, path, sprintf("%s: %s", a$analysis_id, a$relationship)),
     flag(a$analysis == "h2" & a$trait != a$relatives_trait, "h2_relatives_trait_differs",
-         "an h2 analysis has relatives_trait equal to trait", path, a$analysis_id),
+         "an h2 analysis needs relatives_trait equal to trait", path, a$analysis_id),
     flag(a$analysis == "rg" & a$trait == a$relatives_trait, "rg_same_trait",
          "an rg analysis needs two different traits", path, a$analysis_id),
     flag(duplicated(a[, setdiff(ANALYSIS_COLUMNS, "analysis_id"), with = FALSE]),

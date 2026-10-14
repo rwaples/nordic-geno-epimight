@@ -11,17 +11,17 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
   }
   traits <- if (!is.null(study$traits)) read_traits(study$traits)
   analyses <- if (!is.null(study$analyses)) {
-    read_analyses(study$analyses, traits$table, study$max_degree %||% 5L)
+    read_analyses(study$analyses, traits$table, study$max_degree)
   }
   windows <- if (!is.null(study$relative_windows)) {
     read_relative_windows(study$relative_windows, traits$table)
   }
   ped <- if (!is.null(study$pedigree)) {
-    read_pedigree(study$pedigree, study$stratify %||% character(), study$birth_year_bin %||% 1L)
+    read_pedigree(study$pedigree, study$stratify %||% character(), study$birth_year_bin)
   }
   validated <- if (!is.null(ped$pedigree)) {
-    validate(ped$pedigree, file.path(dir, "pedsum"), study$threads %||% 1L,
-             study$external_parent_cap %||% 30L, study$pedigree)
+    validate(ped$pedigree, file.path(dir, "pedsum"), study$threads, study$external_parent_cap,
+             study$pedigree)
   }
   files <- unique(stats::na.omit(as.character(traits$table$file_path)))
   files <- files[file.exists(files)]
@@ -46,10 +46,21 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
 input_files <- function(study_path) {
   study <- read_study(study_path)$study
   traits <- if (!is.null(study$traits)) read_traits(study$traits)$table
+  trait_files <- unique(stats::na.omit(traits$file_path))
   paths <- c(study = study$path, pedigree = study$pedigree, traits = study$traits,
              analyses = study$analyses, relative_windows = study$relative_windows,
-             stats::setNames(unique(traits$file_path), unique(traits$file)))
+             stats::setNames(trait_files, make.unique(basename(trait_files))))
   paths[file.exists(paths)]
+}
+
+# The input files whose path or content differs from what the check step recorded.
+changed_inputs <- function(study_path, out) {
+  recorded <- yaml::read_yaml(file.path(step_dir(out, "check"), "run.yaml"))$inputs
+  was <- stats::setNames(vapply(recorded, `[[`, "", "md5"), vapply(recorded, `[[`, "", "path"))
+  now <- input_files(study_path)
+  now <- stats::setNames(unname(tools::md5sum(now)), unname(now))
+  union(setdiff(names(now), names(was)), names(was)[is.na(now[names(was)]) |
+                                                      now[names(was)] != was])
 }
 
 run_check <- function(study_path, out, dir) {

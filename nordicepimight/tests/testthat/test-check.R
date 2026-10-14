@@ -313,3 +313,26 @@ test_that("a pedigree or trait file that cannot be read stops", {
   result <- check_inputs(path, file.path(dirname(path), "out"), validate = skip_pedsum)
   expect_contains(codes(result), c("pedigree_unreadable", "trait_file_unreadable"))
 })
+
+test_that("absolute paths are used as given", {
+  expect_equal(resolve_path("/root", c("a.tsv", "/data/b.tsv")), c("/root/a.tsv", "/data/b.tsv"))
+  path <- write_fixture()
+  study <- yaml::read_yaml(path)
+  study$pedigree <- file.path(dirname(path), "pedigree.tsv")
+  yaml::write_yaml(study, path)
+  expect_equal(read_study(path)$study$pedigree, normalizePath(study$pedigree))
+})
+
+test_that("an invalid setting stops the run and is replaced by its default", {
+  result <- check_fixture(function(s) {
+    s$study$threads <- 0L
+    s$study$max_degree <- 9L
+    s
+  })
+  expect_contains(codes(result, "STOP"), "study_value_invalid")
+  study <- read_study(write_fixture(function(s) {
+    s$study$max_degree <- 9L
+    s
+  }))$study
+  expect_equal(study$max_degree, 3L)
+})

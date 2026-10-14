@@ -57,6 +57,13 @@ run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
   study_path <- args[1]
   out <- args[2]
   if (!file.exists(study_path)) stop(sprintf("%s not found", study_path), call. = FALSE)
+  if (step != "check" && file.exists(file.path(step_dir(out, "check"), "DONE"))) {
+    changed <- changed_inputs(study_path, out)
+    if (length(changed) > 0) {
+      stop(sprintf("these inputs differ from what `pixi run check` saw in %s; rerun it:\n  %s",
+                   out, paste(changed, collapse = "\n  ")), call. = FALSE)
+    }
+  }
   dir <- begin_step(out, step)
   ok <- fun(study_path, out, dir)
   if (isTRUE(ok)) {

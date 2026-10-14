@@ -14,6 +14,12 @@ as_whole <- function(x, lo, hi = Inf) {
   as.integer(x)
 }
 
+# `value` as given when absolute, else relative to `root`.
+resolve_path <- function(root, value) {
+  absolute <- !is.na(value) & grepl("^(/|~|[A-Za-z]:[/\\\\])", value)
+  ifelse(absolute, path.expand(value), file.path(root, value))
+}
+
 # A date written YYYY-MM-DD, or NA.
 as_date <- function(x) {
   x <- as.character(x)
@@ -49,7 +55,7 @@ read_study <- function(path) {
       study[key] <- list(NULL)
       next
     }
-    file <- file.path(root, value)
+    file <- resolve_path(root, value)
     if (!file.exists(file)) {
       findings <- c(findings, list(finding("file_missing", sprintf("%s file not found", key),
                                            path, file)))
@@ -88,6 +94,7 @@ read_study <- function(path) {
                              limits[[key]][2]),
                      path, sprintf("%s: %s", key, format(study[[key]])))
       findings <- c(findings, list(bad))
+      value <- STUDY_DEFAULTS[[key]]
     }
     study[[key]] <- value
   }
