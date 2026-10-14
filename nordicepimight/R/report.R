@@ -2,18 +2,19 @@
 # analysis gets its estimates, a forest plot, its CIF curves and its cohort counts; then
 # the h2 forests per trait, the rg heatmaps per relationship and a summary table.
 
+# Each row's stratify values joined by " / "; "pooled" for a pooled row.
 stratum_label <- function(d, stratify) {
   label <- do.call(paste, c(lapply(stratify, function(s) as.character(d[[s]])), sep = " / "))
-  ifelse(d$level == "pooled", "pooled", label)
+  if (is.null(d$level)) label else ifelse(d$level == "pooled", "pooled", label)
 }
 
 # Point and sandwich 95% interval per stratum and pooled, for the rows of one or more
 # analyses; `colour` names the column that separates them (one line each).
 plot_forest <- function(d, estimate, stratify, colour = NULL, title = NULL) {
   d <- copy(d)
-  d[, stratum := factor(stratum_label(d, stratify),
-                        levels = rev(unique(c(sort(unique(stratum_label(d, stratify))),
-                                              "pooled"))))]
+  labels <- stratum_label(d, stratify)
+  d[, stratum := factor(labels, levels = rev(c(sort(setdiff(unique(labels), "pooled")),
+                                               "pooled")))]
   d <- d[, est := get(estimate)]
   aesthetics <- ggplot2::aes(x = est, y = stratum, xmin = l95_sandwich, xmax = u95_sandwich)
   if (!is.null(colour)) aesthetics$colour <- as.name(colour)
@@ -42,7 +43,7 @@ plot_rg_heatmap <- function(rg, rel) {
 # CIF curves of one analysis, one panel per cohort, one line per stratum.
 plot_cif <- function(cif, stratify) {
   d <- copy(cif)
-  d[, stratum := do.call(paste, c(lapply(stratify, function(s) as.character(d[[s]])), sep = " / "))]
+  d[, stratum := stratum_label(d, stratify)]
   d[, panel := ifelse(cohort == "population", sprintf("population: %s", index_trait),
                       sprintf("%s: %s, %s relatives with %s", sub("_", " ", cohort), index_trait,
                               relationship, relatives_trait))]
@@ -57,10 +58,9 @@ plot_cif <- function(cif, stratify) {
     ggplot2::theme_minimal(base_size = 10)
 }
 
-# Estimate (sandwich 95% CI) as text, or the note when there is no estimate.
-format_estimate <- function(est, lo, hi, note) {
-  ifelse(is.finite(est), sprintf("%.3f (%.3f, %.3f)", est, lo, hi),
-         ifelse(is.na(note), "NA", paste("NA:", note)))
+# Estimate (sandwich 95% CI) as text; NA when there is none.
+format_estimate <- function(est, lo, hi) {
+  ifelse(is.finite(est), sprintf("%.3f (%.3f, %.3f)", est, lo, hi), "NA")
 }
 
 render_report <- function(out, dir) {

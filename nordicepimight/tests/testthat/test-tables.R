@@ -49,3 +49,16 @@ test_that("notes join without empty parts", {
   expect_equal(join_notes(c("a", NA, NA), c(NA, "b", NA)), c("a", "b", NA))
   expect_equal(join_notes("a", "b"), "a; b")
 })
+
+test_that("a pooled rg with no stratum to pool is NA with a note, whatever EPIMIGHT did", {
+  facts <- list(strata = data.table(trait = c("t1", "t2"), birth_year = "1950"),
+                relatives = data.table(trait = c("t1", "t2"), relationship = "FS", rows = 5,
+                                       affected = 2))
+  jobs <- data.table(job = job_id("rg_pooled", "t1", "t2", "FS"), kind = "rg_pooled",
+                     index_trait = "t1", relatives_trait = "t2", relationship = "FS",
+                     status = "ok", error = NA_character_)
+  results <- list(`rg|t1|t2|FS` = data.table(birth_year = "1950", rg = NaN, se = NaN))
+  out <- classify_jobs(jobs, facts, results, "birth_year")
+  expect_equal(nrow(out$findings), 0)
+  expect_equal(out$notes[["rg_pooled|t1|t2|FS"]], "no stratum with a finite rg and SE to pool")
+})

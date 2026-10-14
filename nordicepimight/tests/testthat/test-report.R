@@ -6,9 +6,16 @@ test_that("an rg heatmap shows only its own relationship", {
   expect_equal(plot$labels$title, "Pooled rg, FS")
 })
 
-test_that("an estimate reads as value and interval, or NA with its note", {
-  expect_equal(format_estimate(c(0.5, NA), c(0.1, NA), c(0.9, NA), c(NA, "no FS rows")),
-               c("0.500 (0.100, 0.900)", "NA: no FS rows"))
+test_that("an estimate reads as value and interval, or NA", {
+  expect_equal(format_estimate(c(0.5, NA), c(0.1, NA), c(0.9, NA)),
+               c("0.500 (0.100, 0.900)", "NA"))
+})
+
+test_that("pooled sits below every stratum in a forest plot, whatever the labels", {
+  d <- data.table(level = c("stratum", "stratum", "pooled"), region = c("south", "north", NA),
+                  h2 = 0.5, l95_sandwich = 0.1, u95_sandwich = 0.9)
+  expect_equal(levels(plot_forest(d, "h2", "region")$data$stratum),
+               c("pooled", "south", "north"))
 })
 
 test_that("CIF panels run population, family history, cross", {

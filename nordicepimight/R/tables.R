@@ -17,7 +17,8 @@ NOTES <- list(
   no_relative_rows = "no %s rows for trait %s",
   no_affected_relative = "no proband with a %s relative affected by %s",
   rg_join_empty = "no age shared by the CIFs and both h2 tables",
-  no_poolable_stratum = "no stratum with a positive h2 and SE"
+  no_poolable_stratum = "no stratum with a positive h2 and SE",
+  no_poolable_rg = "no stratum with a finite rg and SE to pool"
 )
 # The text of the EPIMIGHT stop each predicted cause must produce (Pipeline-class.R).
 STOP_MESSAGES <- c(
@@ -91,7 +92,24 @@ rg_ages <- function(results, i, j, rel, stratify) {
   last_rows(joined, stratify)
 }
 
-predict_stop <- function(job, facts, results, stratify) {
+# rg_ages for every rg call, by its job id; computed once and shared.
+all_rg_ages <- function(jobs, results, stratify) {
+  rg <- jobs[kind == "rg"]
+  stats::setNames(lapply(seq_len(nrow(rg)), function(k) {
+    rg_ages(results, rg$index_trait[k], rg$relatives_trait[k], rg$relationship[k], stratify)
+  }), rg$job)
+}
+
+rg_ages_of <- function(ages, i, j, rel) ages[[job_id("rg", i, j, rel)]]
+
+# Whether no stratum of an rg call has a finite rg and SE, so nothing can be pooled.
+# EPIMIGHT does not stop then (run_meta sums over nothing, Analysis-class.R:96-101), so the
+# pooled row is NA with a note whatever the pooled call returned.
+nothing_to_pool <- function(rg) {
+  !is.null(rg) && nrow(rg[is.finite(rg) & is.finite(se)]) == 0
+}
+
+predict_stop <- function(job, facts, results, stratify, ages) {
   rel <- job$relationship
   switch(job$kind,
     cif = if (!is.na(rel)) cohort_cause(facts, job$relatives_trait, rel),
@@ -109,20 +127,26 @@ predict_stop <- function(job, facts, results, stratify) {
     rg_pooled = {
       found <- cohort_cause(facts, job$index_trait, rel) %||%
         cohort_cause(facts, job$relatives_trait, rel)
-      ages <- rg_ages(results, job$index_trait, job$relatives_trait, rel, stratify)
-      if (is.null(found) && !is.null(ages) && nrow(ages) == 0) found <- cause("rg_join_empty")
+      at <- rg_ages_of(ages, job$index_trait, job$relatives_trait, rel)
+      if (is.null(found) && !is.null(at) && nrow(at) == 0) found <- cause("rg_join_empty")
       found
     }
   )
 }
 
 # Each errored job's note, and a STOP for every outcome its prediction did not match.
-classify_jobs <- function(jobs, facts, results, stratify) {
+classify_jobs <- function(jobs, facts, results, stratify,
+                          ages = all_rg_ages(jobs, results, stratify)) {
   notes <- list()
   findings <- list()
   for (k in seq_len(nrow(jobs))) {
     job <- jobs[k]
-    predicted <- predict_stop(job, facts, results, stratify)
+    predicted <- predict_stop(job, facts, results, stratify, ages)
+    stratum_rg <- results[[job_id("rg", job$index_trait, job$relatives_trait, job$relationship)]]
+    if (job$kind == "rg_pooled" && is.null(predicted) && nothing_to_pool(stratum_rg)) {
+      notes[[job$job]] <- NOTES$no_poolable_rg
+      next
+    }
     expected <- if (is.null(predicted)) NA_character_ else STOP_MESSAGES[[predicted$code]]
     if (job$status == "ok" && !is.null(predicted)) {
       unmet <- finding("epimight_prediction_unmet",
@@ -138,18 +162,18 @@ classify_jobs <- function(jobs, facts, results, stratify) {
     } else if (job$status == "error") {
       notes[[job$job]] <- predicted$text
     } else if (job$kind == "rg") {
-      ages <- rg_ages(results, job$index_trait, job$relatives_trait, job$relationship, stratify)
+      at <- ages[[job$job]]
       only <- function(a, b) nrow(fsetdiff(unique(a[, ..stratify]), unique(b[, ..stratify])))
       rg <- results[[job$job]]
-      if (!is.null(ages) && (only(ages, rg) > 0 || only(rg, ages) > 0)) {
+      if (!is.null(at) && (only(at, rg) > 0 || only(rg, at) > 0)) {
         mismatch <- finding("rg_age_rebuild_mismatch",
                             sprintf("%s: rebuilt rg ages cover %d strata, EPIMIGHT's rg %d",
-                                    job$job, nrow(ages), nrow(rg)))
+                                    job$job, nrow(at), nrow(rg)))
         findings <- c(findings, list(mismatch))
       }
     }
   }
-  list(notes = notes, findings = collect(findings))
+  list(notes = notes, findings = collect(findings), ages = ages)
 }
 
 join_notes <- function(...) {
@@ -221,7 +245,7 @@ h2_block <- function(a, facts, results, notes, stratify) {
         conform(pooled[, (names(identity)) := identity], columns))
 }
 
-rg_block <- function(a, facts, results, notes, stratify) {
+rg_block <- function(a, facts, results, notes, stratify, ages) {
   i <- a$trait
   j <- a$relatives_trait
   rel <- a$relationship
@@ -236,8 +260,8 @@ rg_block <- function(a, facts, results, notes, stratify) {
     rg <- copy(results[[id]])
     setnames(rg, names(ESTIMATE_RENAME), ESTIMATE_RENAME)
     rg[, present := TRUE]
-    ages <- rg_ages(results, i, j, rel, stratify)
-    strata <- merge(merge(expected, ages, by = stratify, all.x = TRUE), rg, by = stratify,
+    at <- rg_ages_of(ages, i, j, rel)
+    strata <- merge(merge(expected, at, by = stratify, all.x = TRUE), rg, by = stratify,
                     all.x = TRUE)
     strata[is.na(present), present := FALSE]
     strata[, `:=`(level = "stratum", age_min = age, age_max = age, n_strata = as.integer(present),
@@ -293,7 +317,7 @@ build_tables <- function(analyses, cohort, epimight, stratify) {
     h2_block(analyses[k], facts, results, verdict$notes, stratify)
   }))
   rg <- rbindlist(lapply(which(analyses$analysis == "rg"), function(k) {
-    rg_block(analyses[k], facts, results, verdict$notes, stratify)
+    rg_block(analyses[k], facts, results, verdict$notes, stratify, verdict$ages)
   }))
   cif <- rbindlist(lapply(seq_len(nrow(analyses)), function(k) {
     cif_rows(analyses[k], results, stratify)

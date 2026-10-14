@@ -63,6 +63,11 @@ compare_tables <- function(name, actual, expected, keys, columns, rtol = RTOL) {
     set(actual, j = k, value = as.character(actual[[k]]))
     set(expected, j = k, value = as.character(expected[[k]]))
   }
+  absent <- c(setdiff(c(keys, columns), names(actual)), setdiff(c(keys, columns), names(expected)))
+  if (length(absent) > 0) {
+    listed <- paste(unique(absent), collapse = ", ")
+    return(item(name, "FAIL", sprintf("column(s) absent: %s", listed)))
+  }
   m <- merge(actual, expected, by = keys, suffixes = c(".kit", ".expected"), all = TRUE)
   only_expected <- nrow(fsetdiff(unique(expected[, ..keys]), unique(actual[, ..keys])))
   only_kit <- nrow(fsetdiff(unique(actual[, ..keys]), unique(expected[, ..keys])))

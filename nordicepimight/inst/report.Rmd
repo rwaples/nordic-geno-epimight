@@ -34,8 +34,8 @@ table_of <- function(d) print(knitr::kable(d, format = "html", table.attr = "cla
 age_span <- function(lo, hi) ifelse(is.na(lo), "", ifelse(lo == hi, lo, paste(lo, hi, sep = "-")))
 estimate_rows <- function(d, estimate) {
   d[, .(stratum = stratum_label(d, stratify), ages = age_span(age_min, age_max),
-        estimate = format_estimate(get(estimate), l95_sandwich, u95_sandwich, note),
-        se_native = signif(se_native, 3))]
+        estimate = format_estimate(get(estimate), l95_sandwich, u95_sandwich),
+        se_native = signif(se_native, 3), note = ifelse(is.na(note), "", note))]
 }
 version_of <- function(pkg) {
   sprintf("%s (%s)", run$installed[[pkg]]$version, substr(run$installed[[pkg]]$commit, 1, 7))
@@ -110,10 +110,12 @@ for (r in unique(rg$relationship)) {
 ```{r summary, results = "asis"}
 pooled_h2 <- h2[level == "pooled", .(analysis_id, estimate = "h2", traits = trait, relationship,
                                      strata = n_strata,
-                                     value = format_estimate(h2, l95_sandwich, u95_sandwich, note))]
+                                     value = format_estimate(h2, l95_sandwich, u95_sandwich),
+                                     note = ifelse(is.na(note), "", note))]
 pooled_rg <- rg[level == "pooled", .(analysis_id, estimate = "rg",
                                      traits = paste(index_trait, "on", relatives_trait),
                                      relationship, strata = n_strata,
-                                     value = format_estimate(rg, l95_sandwich, u95_sandwich, note))]
+                                     value = format_estimate(rg, l95_sandwich, u95_sandwich),
+                                     note = ifelse(is.na(note), "", note))]
 table_of(rbind(pooled_h2, pooled_rg))
 ```
