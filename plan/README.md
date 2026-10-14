@@ -16,4 +16,4 @@ sites ran the same plan when their checksums match.
   exported results.
 
 The trait `HS` (haemorrhagic stroke) shares its code with the half-sibling relationship
-`HS`. The kit keeps them apart, but tables that show both are easy to misread.
+`HS`. We have asked to rename it `HST` (`docs/open-questions.md`, question 4).

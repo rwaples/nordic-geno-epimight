@@ -14,3 +14,9 @@ The kit made a choice on each of these. The answers may change it.
 3. **One study population.** Every trait file must list the same people, and someone
    excluded from a trait keeps a censored row. Do your registers need different people
    per trait?
+
+4. **Rename haemorrhagic stroke from `HS` to `HST`.** In
+   `Definitions/Phenotype_list.tsv`, haemorrhagic stroke is abbreviated `HS`, the same
+   code the kit uses for half siblings. The kit keeps the two apart, but tables and plots
+   that show both are easy to misread. Could the abbreviation become `HST`? The shared
+   plan (`plan/traits.tsv`, `plan/analyses.tsv`) will follow.
