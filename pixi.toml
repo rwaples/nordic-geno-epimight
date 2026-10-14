@@ -53,5 +53,7 @@ cohort = { cmd = "Rscript steps/2_cohort.R", description = "Step 2: build the co
 epimight = { cmd = "Rscript steps/3_epimight.R", description = "Step 3: run EPIMIGHT (pixi run epimight study.yaml OUT/)" }
 tables = { cmd = "Rscript steps/4_tables.R", description = "Step 4: write the output tables (pixi run tables study.yaml OUT/)" }
 report = { cmd = "Rscript steps/5_report.R", description = "Step 5: render the HTML report (pixi run report study.yaml OUT/)" }
+study = { cmd = "Rscript steps/study.R", description = "Steps 1-5 in order (pixi run study study.yaml OUT/)" }
+selftest = { cmd = "Rscript steps/selftest.R", description = "The kit on its toy study, against independent values (pixi run selftest OUT/)" }
 test = { cmd = "Rscript -e 'testthat::test_local(\"nordicepimight\", stop_on_failure = TRUE)'", description = "Unit tests" }
 lint = { cmd = "Rscript -e 'l <- c(lintr::lint_package(\"nordicepimight\"), lintr::lint_dir(\"steps\"), lintr::lint_dir(\"dev\")); print(l); quit(status = length(l) > 0)'", description = "Lint the package and step scripts" }

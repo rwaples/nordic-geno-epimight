@@ -32,6 +32,21 @@ finish_step <- function(out, step) {
   writeLines(format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"), file.path(step_dir(out, step), "DONE"))
 }
 
+# Each step's function, looked up when a step runs.
+step_functions <- function() {
+  list(check = run_check, cohort = run_cohort, epimight = run_epimight, tables = run_tables,
+       report = run_report)
+}
+
+# pixi run study study.yaml OUT/: every step in order, stopping at the first that fails.
+run_study <- function(args = commandArgs(trailingOnly = TRUE)) {
+  for (step in STEPS) {
+    cat(sprintf("== %s\n", step))
+    run_step(step, step_functions()[[step]], args)
+  }
+  invisible(TRUE)
+}
+
 # The body of steps/<n>_<step>.R: reads `study.yaml OUT/` from the command line, runs
 # `fun(study_path, out, dir)` in a fresh step directory, and marks it done when `fun`
 # returns TRUE. Exits 1 otherwise.
