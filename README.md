@@ -44,12 +44,13 @@ runs five steps in order. Each can also be run alone, as `pixi run <step> study.
 | `report` | `out/report.html` | One self-contained page of results and plots. |
 
 A step starts only after the one before it has finished, and rerunning a step deletes
-the output of every later step, so `out/` never mixes runs.
+the output of every later step, so `out/` never mixes runs. Steps 2 to 5 stop if any input
+file has changed since `check` read it; rerun `check` then.
 
 ## Inputs
 
-Paths in `study.yaml` are relative to `study.yaml`; trait files in `traits.tsv` are
-relative to `traits.tsv`. All tables are tab-separated with a header row. `NA` or an empty
+Relative paths in `study.yaml` are relative to `study.yaml`, and relative trait-file paths
+in `traits.tsv` are relative to `traits.tsv`; absolute paths are used as given. All tables are tab-separated with a header row. `NA` or an empty
 cell is missing. Ids are text: `001`, `1` and `1.0` are three people.
 
 ### study.yaml
