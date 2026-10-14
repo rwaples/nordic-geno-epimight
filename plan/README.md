@@ -14,6 +14,3 @@ sites ran the same plan when their checksums match.
   full siblings (FS), half siblings (HS) and parents (PO), and no rg.
 - `plan.yaml` stratifies by 5-year birth cohort and suppresses counts from 1 to 5 in the
   exported results.
-
-The trait `HS` (haemorrhagic stroke) shares its code with the half-sibling relationship
-`HS`. We have asked to rename it `HST` (`docs/open-questions.md`, question 4).
