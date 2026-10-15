@@ -1,21 +1,30 @@
 # nordic-geno-epimight
 
-Runs one shared analysis plan on the registers of several Nordic countries. Each site
-estimates heritability (h²) and genetic correlation (rg) with
-[EPIMIGHT](https://github.com/BioPsyk/epimight), using pedigree-pair sandwich standard
-errors, and sends back one folder of aggregate results with small counts suppressed.
+ A series of R scripts (kit) to run [EPIMIGHT](https://github.com/BioPsyk/epimight) analyses in parallel across the the registers of Denmark, Norway and Sweden. Birth year-stratified estimates of cumulative incidence fraction (CIF), heritability (h²) and genetic correlation (rg) are produced within country. 
 
-Everything is shared except the data. `plan/` lists the traits and the analyses and is
-the same at every site. Each site writes one file in `local/` saying where its data are.
-The kit checks the data, builds EPIMIGHT's input, runs EPIMIGHT, and writes tables, an
-HTML report and the folder to share. It runs in R; the pedigree check uses
-[pedsum](https://github.com/rwaples/pedsum).
+Repo structure: The repo is split into `plan/` and `local/` folders. The `plan/` folder applies to all countries contains a files describing the traits and the analyses to be conducted. The `local/` folder contains a single config files that is unique to each country describing how to find the input data and a bit about how run the analysis, (e.g. number of cores). The repo also contains some documentation and associated files. 
 
-The plan and the export rules are **preliminary**.
+The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects the output.  In addition to the raw output, the kit can produce plots and summaries of the results, as well as prepare the results for export by censoring personally identifiable information (PII). 
+
+/# | Step | Description  |
+|---|---|---|
+0 | `prepare` | Convert country-specifc registry data to common phenotype and pedigree data formats. Prerequisit for these analyses. | 
+1 | `check` | Checks and validates input data - including both phenotype and pedigree data |
+2 | `cohort` | Selects individuals for analysis Applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
+3 | `epimight` |  Runs EPIMIGHT once for each estimate the analyses need |
+4 | `summarize` |  Collects and synthsizes the epimight output |
+5 | `report` |  Prepares plots of the results and summaries |
+6 | `export` |  Prepares the data for export by suppressing PII. |
+
+Each step relies on the output of previous step(s). Rerunning a step deletes the output of
+the steps after it. If an input file changes after `check`, the later steps stop until you
+rerun `check`.
+
+Current status: **preliminary**.
 
 ## Install
 
-Install [pixi](https://pixi.sh) 0.76, then run from this folder:
+Install [pixi](https://pixi.sh) 0.82, then run from this folder:
 
 ```sh
 pixi install --locked
