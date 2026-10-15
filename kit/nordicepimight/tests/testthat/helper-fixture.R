@@ -63,9 +63,7 @@ write_fixture <- function(edit = identity) {
 }
 
 # pedsum takes a few seconds per run, so only the tests about the pedigree run it.
-skip_pedsum <- function(pedigree, dir, ...) {
-  list(validated = pedigree[, .(id, mother, father)], findings = no_findings())
-}
+skip_pedsum <- function(pedigree, dir, ...) no_findings()
 
 check_fixture <- function(edit = identity, pedsum = FALSE) {
   path <- write_fixture(edit)

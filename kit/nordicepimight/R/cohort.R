@@ -25,7 +25,7 @@ build_cohort <- function(inputs) {
   traits <- inputs$traits[trait %in% used]
   relationships <- unique(inputs$analyses$relationship)
   pedigree <- inputs$pedigree
-  pairs <- relative_pairs(inputs$validated_pedigree, relationships)
+  pairs <- relative_pairs(pedigree, relationships)
   windows <- relatives_window(traits, relationships, inputs$relative_windows)
   rows_of <- function(file) {
     d <- copy(inputs$trait_data[[file]])

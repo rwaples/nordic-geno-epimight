@@ -8,9 +8,9 @@ SITE_REQUIRED <- c("site", "plan", "data_folder", "pedigree_path", "study_end")
 SITE_DEFAULTS <- list(threads = 1L)
 PLAN_REQUIRED <- c("traits", "analyses", "stratify")
 PLAN_DEFAULTS <- list(relative_windows = NULL, birth_year_bin = 1L, max_degree = 3L,
-                      external_parent_cap = 30L, export_min_count = 5L)
+                      export_min_count = 5L)
 LIMITS <- list(threads = c(1, 1024), birth_year_bin = c(1, 200), max_degree = c(1, 5),
-               external_parent_cap = c(1, Inf), export_min_count = c(1, 100))
+               export_min_count = c(1, 100))
 
 # A whole number in [lo, hi], or NA.
 as_whole <- function(x, lo, hi = Inf) {

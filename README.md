@@ -111,12 +111,28 @@ A partial list:
 - Birth location and civil register - any special handling that is necessary.
 - For making the analysis windows (W1 - W4) implement appropriate filters on diagnosis time. Do not filter by birth year here; that will happen in step 2.
 
+Last, repair the pedigree with pedsum. The kit never changes the pedigree. Its check step
+runs `pedsum validate` and stops on anything pedsum finds, such as a parent without a row
+of its own, a duplicate row or a sex that contradicts a parent role. Add a `birth_year`
+column (the year of `birth_date`) and run:
+
+```sh
+pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year
+gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
+```
+
+Then point `pedigree_path` at `pedigree_validated.tsv`. pedsum adds a founder row, with no
+`birth_date`, for each parent without a row of its own. Check those parents in
+`pedsum/validate.log` first. A parent id with many children is probably a code for an
+unknown parent; rerun with `--missing-parent-token <code>`. If pedsum stops or finds
+something it doesn't repair, see its `--drop-offending` and `--break-cycles` options.
+
 ## Inputs
 
-All tables are tab-separated with a header row. A missing value is `NA` or an empty cell.
-Ids are text, so `001`, `1` and `1.0` are three different people. Relative paths are
-resolved from the folder of the file that names them; the trait files from your data
-folder.
+All tables are tab-separated and include a header row. Missing values are `NA` or an
+empty cell. Ids are read as text, so `001`, `1` and `1.0` are three different people.
+Relative paths are resolved from the folder of the file that names them; the trait files
+from your data folder.
 
 ### Site file
 
@@ -142,7 +158,6 @@ relative_windows: relative_windows.tsv   # optional
 stratify: [birth_year]                   # pedigree columns, or birth_year
 birth_year_bin: 5                        # default 1
 max_degree: 3                            # 1 to 5, default 3
-external_parent_cap: 30                  # default 30
 export_min_count: 5                      # default 5
 ```
 
@@ -152,14 +167,13 @@ of `birth_date`, grouped into `birth_year_bin`-year bins named by their first ye
 `max_degree` sets which relative pairs enter the sandwich SE. It must reach the furthest
 relationship analysed: 1 for PO and FS, 2 for HS, mHS, pHS, Av and 1G, 3 for 1C.
 
-A parent id without its own row is added as a founder. If it has more children than
-`external_parent_cap`, the run stops, because it is probably a code for an unknown parent.
-
 ### Pedigree
 
 One row per person with `id, mother, father, sex, birth_date`, plus any column you
 stratify on. Write an unknown parent as `NA`, empty or `-1`. Use `0` only if 0 is a real
-id. Sex is 1 for male, 2 for female and 0 for unknown. Dates are `YYYY-MM-DD`.
+id. Sex is 1 for male, 2 for female and 0 for unknown. Dates are `YYYY-MM-DD`. Everyone
+in the trait files needs a `birth_date`; other people may leave it empty. pedsum validate
+must find nothing wrong with the file (step 0).
 
 ### Trait files
 
@@ -276,11 +290,12 @@ cells, such as one new case between two ages of a CIF curve.
 The check step stops on any input it can't use: unknown keys or columns, missing files,
 bad dates, ages or statuses, an age that disagrees with its date, duplicate ids, ids
 missing from the pedigree, trait files with different people, a missing stratum value,
-pedigree errors from pedsum, or installed packages that don't match the pins. Each line
-of `out/1_check/findings.tsv` has a code, the file, a count, examples and what is wrong.
+anything pedsum validate finds in the pedigree, or installed packages that don't match
+the pins. Each line of `out/1_check/findings.tsv` has a code, the file, a count, examples
+and what is wrong.
 
-Some problems are warnings and don't stop the run, for example parents without their own
-row, or fewer than 10 cases in a stratum.
+Some problems are warnings and don't stop the run, for example fewer than 10 cases in a
+stratum.
 
 Two later stops can happen. The cohort step stops if a trait's rules leave nobody. The
 tables step stops if EPIMIGHT fails in a way the kit didn't predict. Please report that

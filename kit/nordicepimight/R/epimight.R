@@ -1,4 +1,4 @@
-# Step 3, epimight: one EPIMIGHT Pipeline over the cohort table and the validated pedigree,
+# Step 3, epimight: one EPIMIGHT Pipeline over the cohort table and the pedigree,
 # and one call per distinct estimate the analyses need. Every call runs inside tryCatch;
 # the tables step decides which errors EPIMIGHT was bound to raise. Writes
 # 3_epimight/results.rds (each call's arguments, outcome and unrounded result) and
@@ -100,7 +100,7 @@ run_epimight <- function(study_path, out, dir) {
   pedigreegraph::configure_threads(study$threads)
   options(pedigreegraph.progress = FALSE)
   cohort <- read_cohort(file.path(step_dir(out, "cohort"), "cohort.tsv"), study$stratify)
-  pedigree <- inputs$validated_pedigree[, .(person_id = id, mother_id = mother, father_id = father)]
+  pedigree <- inputs$pedigree[, .(person_id = id, mother_id = mother, father_id = father)]
   started <- proc.time()[["elapsed"]]
   pipeline <- suppressWarnings(epimight::Pipeline$new(pool = cohort, pedigree = pedigree,
                                                       max_degree = study$max_degree))

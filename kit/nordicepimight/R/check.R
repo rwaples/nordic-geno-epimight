@@ -19,9 +19,8 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
   ped <- if (!is.null(study$pedigree_path)) {
     read_pedigree(study$pedigree_path, study$stratify %||% character(), study$birth_year_bin)
   }
-  validated <- if (!is.null(ped$pedigree)) {
-    validate(ped$pedigree, file.path(dir, "pedsum"), study$threads, study$external_parent_cap,
-             study$pedigree_path)
+  pedsum <- if (!is.null(ped$pedigree)) {
+    validate(ped$pedigree, file.path(dir, "pedsum"), study$threads, study$pedigree_path)
   }
   files <- unique(stats::na.omit(as.character(traits$table$file_path)))
   files <- files[file.exists(files)]
@@ -33,11 +32,11 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
                "the installed package differs from its pin", examples = mismatches)
 
   findings <- collect(s$findings, traits$findings, analyses$findings, windows$findings,
-                      ped$findings, validated$findings, trait_files$findings, pins)
+                      ped$findings, pedsum, trait_files$findings, pins)
   inputs <- if (!has_stop(findings)) {
     list(study = study, traits = traits$table, analyses = analyses$table,
          relative_windows = windows$table, pedigree = ped$pedigree,
-         validated_pedigree = validated$validated, trait_data = trait_files$data,
+         trait_data = trait_files$data,
          population = trait_files$population)
   }
   list(findings = findings, inputs = inputs, study = study)

@@ -221,14 +221,15 @@ check_cohort_cases <- function(selftest, dir) {
 
 # Broken copies of the prepared toy, each of which must stop the check step with its code.
 BROKEN <- list(
-  external_parent_over_cap = function(d) {
+  pedigree_invalid = function(d) {
     p <- fread(file.path(d, "data", "pedigree.tsv"), colClasses = "character")
-    p[which(!is.na(father))[1:31], father := "EXTERNAL"]
+    p[which(!is.na(father))[1], father := "EXTERNAL"]
     fwrite(p, file.path(d, "data", "pedigree.tsv"), sep = "\t", na = "NA")
   },
   birth_date_missing = function(d) {
     p <- fread(file.path(d, "data", "pedigree.tsv"), colClasses = "character")
-    p[1, birth_date := NA]
+    proband <- fread(file.path(d, "data", "trait1.tsv"), colClasses = "character")$id[1]
+    p[id == proband, birth_date := NA]
     fwrite(p, file.path(d, "data", "pedigree.tsv"), sep = "\t", na = "NA")
   },
   trait_duplicate_id = function(d) {

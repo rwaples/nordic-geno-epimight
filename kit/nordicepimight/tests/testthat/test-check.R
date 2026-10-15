@@ -3,7 +3,7 @@ test_that("the fixture study passes with only the few-cases warning", {
   expect_equal(codes(result, "STOP"), character())
   expect_equal(unique(codes(result, "WARN")), "few_cases")
   expect_setequal(result$inputs$population, paste0("c", 1:6))
-  expect_equal(result$inputs$validated_pedigree[id == "c1", c(mother, father)], c("p2", "p1"))
+  expect_equal(result$inputs$pedigree[id == "c1", c(mother, father)], c("p2", "p1"))
   expect_equal(result$inputs$pedigree[id == "c1", birth_year], 1950L)
 })
 
@@ -146,12 +146,9 @@ cases <- list(
     s$pedigree[, sex := NULL]
     s
   },
-  parent_zero = function(s) {
-    s$pedigree[id == "c1", mother := "0"]
-    s
-  },
   birth_date_missing = function(s) {
-    s$pedigree[id == "p4", birth_date := NA]
+    s$trait_files <- lapply(s$trait_files, trait_rows, "t", s$pedigree)
+    s$pedigree[id == "c1", birth_date := NA]
     s
   },
   birth_date_invalid = function(s) {
@@ -168,19 +165,6 @@ cases <- list(
   },
   pedigree_invalid = function(s) {
     s$pedigree[id == "p1", birth_date := "1960-01-01"]
-    s
-  },
-  external_parent_over_cap = function(s) {
-    s$plan$external_parent_cap <- 2L
-    s$pedigree[id %in% c("c1", "c2", "c3"), father := "X9"]
-    s
-  },
-  external_parents = function(s) {
-    s$pedigree[id == "c4", father := "X9"]
-    s
-  },
-  pedigree_autofixed = function(s) {
-    s$pedigree[id == "p1", sex := 2]
     s
   },
   trait_file_missing_column = function(s) {
@@ -241,8 +225,7 @@ trait_rule_cases <- list(
   }
 )
 
-pedsum_cases <- c("pedigree_invalid", "external_parent_over_cap", "external_parents",
-                  "pedigree_autofixed")
+pedsum_cases <- "pedigree_invalid"
 for (code in names(cases)) {
   local({
     expected <- code
@@ -268,7 +251,7 @@ test_that("an unreadable site file stops", {
 })
 
 test_that("a stop leaves no inputs for the next step", {
-  expect_null(check_fixture(cases$parent_zero)$inputs)
+  expect_null(check_fixture(cases$birth_date_invalid)$inputs)
 })
 
 test_that("rule columns parse with the script's defaults", {
@@ -295,10 +278,38 @@ test_that("ids are text: 001, 1 and 1.0 are three people", {
   expect_setequal(result$inputs$population, c("001", "1", "1.0", "c4", "c5", "c6"))
 })
 
-test_that("an external parent is a warning within the cap", {
-  result <- check_fixture(cases$external_parents, pedsum = TRUE)
-  expect_equal(result$findings[code == "external_parents", examples], "X9: 1 children")
+test_that("any repair pedsum would make stops the run", {
+  external <- check_fixture(function(s) {
+    s$pedigree[id == "c4", father := "X9"]
+    s
+  }, pedsum = TRUE)
+  expect_equal(codes(external, "STOP"), "pedigree_invalid")
+  expect_match(external$findings[code == "pedigree_invalid", examples], "X9")
+  sex <- check_fixture(function(s) {
+    s$pedigree[id == "p1", sex := 2]
+    s
+  }, pedsum = TRUE)
+  expect_equal(codes(sex, "STOP"), "pedigree_invalid")
+})
+
+test_that("a founder pedsum added, with no birth date or trait row, passes", {
+  result <- check_fixture(function(s) {
+    s$trait_files <- lapply(s$trait_files, trait_rows, "t", s$pedigree)
+    s$pedigree[id == "c4", father := "X9"]
+    s$pedigree <- rbind(data.table(id = "X9", mother = NA, father = NA, sex = 1,
+                                   birth_date = NA), s$pedigree)
+    s
+  }, pedsum = TRUE)
   expect_equal(codes(result, "STOP"), character())
+  expect_equal(result$inputs$pedigree[id == "c4", father], "X9")
+})
+
+test_that("a birth_year column that matches birth_date is not replaced with a warning", {
+  result <- check_fixture(function(s) {
+    s$pedigree[, birth_year := substr(birth_date, 1, 4)]
+    s
+  })
+  expect_false("pedigree_birth_year_replaced" %in% codes(result))
 })
 
 test_that("a pedigree or trait file that cannot be read stops", {

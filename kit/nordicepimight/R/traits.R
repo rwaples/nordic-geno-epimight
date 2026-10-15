@@ -83,6 +83,10 @@ read_trait_files <- function(files, pedigree, study_end, stratify) {
   population <- everyone
   if (!is.null(pedigree)) {
     people <- pedigree[id %in% population]
+    no_birth <- flag(is.na(people$birth_date), "birth_date_missing",
+                     "birth_date is missing for someone in the study population", NA_character_,
+                     people$id)
+    findings <- collect(findings, no_birth)
     for (col in intersect(stratify, names(people))) {
       na <- flag(is.na(people[[col]]), "stratum_na",
                  sprintf("%s is missing for someone in the study population", col),
