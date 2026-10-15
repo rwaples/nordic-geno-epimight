@@ -85,7 +85,7 @@ The kit supports each of these; only `plan/` has to change.
 
 ## Left to each site's data preparation
 
-The kit can't check these, so the README should state them:
+The kit can't check these. The README lists them under step 0:
 
 - Remove adoptive links from parent-offspring and sibling relationships.
 - Same-sex parents: keep the birth mother where known and set the other parent missing.

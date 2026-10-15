@@ -12,7 +12,7 @@ The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects 
 1 | `check` | Checks and validates input data - including both phenotype and pedigree data |
 2 | `cohort` | Selects individuals for analysis Applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
 3 | `epimight` |  Runs EPIMIGHT once for each estimate the analyses need |
-4 | `summarize` |  Collects and synthsizes the epimight output |
+4 | `tables` |  Collects and synthsizes the epimight output |
 5 | `report` |  Prepares plots of the results and summaries |
 6 | `export` |  Prepares the data for export by suppressing PII. |
 
@@ -24,15 +24,35 @@ Current status: **preliminary**.
 
 ## Install
 
-Install [pixi](https://pixi.sh) 0.82, then run from this folder:
+The kit needs [pixi](https://pixi.sh) 0.82. pixi installs one binary under
+`~/.pixi/bin` and doesn't need root. Its installer fetches the latest release unless told
+otherwise, and the kit refuses any other series, so name the version:
 
 ```sh
+curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=v0.82.0 bash
+export PATH="$HOME/.pixi/bin:$PATH"
+pixi --version
+```
+
+The installer also adds `~/.pixi/bin` to `PATH` in your shell's startup file. If
+`pixi --version` fails in a new terminal, add the `export` line there yourself. If you
+already have pixi at another version, switch with:
+
+```sh
+pixi self-update --version v0.82.0
+```
+
+Then get the kit and install it:
+
+```sh
+git clone https://github.com/rwaples/nordic-geno-epimight.git
+cd nordic-geno-epimight
 pixi install --locked
 pixi run setup
 pixi run selftest selftest-out/
 ```
 
-`setup` downloads and compiles EPIMIGHT and pedigreegraph at the commits pinned in
+`setup` downloads and compiles EPIMIGHT and pedigreegraph from Github at the commits pinned in
 `kit/nordicepimight/inst/pins.yaml`. It needs internet access and takes about 3 minutes
 the first time. Every run checks that the installed versions match the pins.
 
@@ -43,9 +63,7 @@ check, and exits 1 if any check fails. Run it before using your own data.
 
 ## Run at your site
 
-1. Prepare your data folder: `pedigree.tsv` and one trait file per trait in
-   `plan/traits.tsv`, named as its `file` column says (`MDD.tsv`, ...). The formats are
-   below.
+1. Prepare your data folder (step 0, below).
 2. Copy `local/example.yaml` to `local/<your site>.yaml` and fill it in. Files in `local/`
    are not committed.
 3. Run every step:
@@ -66,6 +84,7 @@ Start with the initial plan. For the complete one, change `plan:` in your site f
 
 | Step | Output | Does |
 |---|---|---|
+| `prepare` | your data folder | Your own scripts; the kit has no command for it (below) |
 | `check` | `out/1_check/` | Checks every input and lists each problem in `findings.tsv` |
 | `cohort` | `out/2_cohort/` | Applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
 | `epimight` | `out/3_epimight/` | Runs EPIMIGHT once for each estimate the analyses need |
@@ -73,9 +92,23 @@ Start with the initial plan. For the complete one, change `plan:` in your site f
 | `report` | `out/report.html` | Writes one page with every result and plot |
 | `export` | `out/6_export/` | Writes the folder to share, with small counts suppressed |
 
-Each step needs the previous one to have finished. Rerunning a step deletes the output of
-the steps after it. If an input file changes after `check`, the later steps stop until you
-rerun `check`.
+### Step 0: prepare your data
+
+Each site converts its own registers into the kit's formats, with its own scripts. The
+result is one data folder holding `pedigree.tsv` and one trait file per trait in
+`plan/traits.tsv`, named as its `file` column says (`MDD.tsv`, ...). The formats are
+under [Inputs](#inputs). Build the trait files from the ICD codes in
+`Definitions/Phenotype_list.tsv`.
+
+The analysis plan (`docs/Firstpass_SAP_Scandinavian_Genealogy.txt`, section 4.1) asks
+for these, which the kit can't check:
+
+- Remove adoptive links from parent-offspring and sibling relationships.
+- Same-sex parents: keep the birth mother where the birth register identifies her, and
+  set the other parent to missing.
+- Ignore MDD, bipolar disorder and schizophrenia diagnoses before age 10.
+- Twins: the kit counts MZ twins as full siblings. How to remove same-multiple-birth
+  pairs is open question 5 in `docs/open-questions.md`.
 
 ## Inputs
 
