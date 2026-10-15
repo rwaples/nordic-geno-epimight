@@ -6,3 +6,4 @@ out/
 selftest-out/
 local/*
 !local/example.yaml
+.~lock.*#
