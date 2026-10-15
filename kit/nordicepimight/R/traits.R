@@ -56,7 +56,7 @@ read_trait_file <- function(path, pedigree, study_end) {
 
 # Checks every trait file and the study population they share. `files` are the distinct
 # trait file paths. Returns list(data (named by path), population (ids), findings).
-read_trait_files <- function(files, pedigree, study_end, stratify) {
+read_trait_files <- function(files, pedigree, study_end, stratify, pedigree_path) {
   read <- lapply(stats::setNames(nm = files), read_trait_file, pedigree = pedigree,
                  study_end = study_end)
   data <- lapply(read, `[[`, "data")
@@ -84,13 +84,14 @@ read_trait_files <- function(files, pedigree, study_end, stratify) {
   if (!is.null(pedigree)) {
     people <- pedigree[id %in% population]
     no_birth <- flag(is.na(people$birth_date), "birth_date_missing",
-                     "birth_date is missing for someone in the study population", NA_character_,
+                     "birth_date is missing for someone in the study population", pedigree_path,
                      people$id)
     findings <- collect(findings, no_birth)
-    for (col in intersect(stratify, names(people))) {
+    # A missing birth_year is a missing birth_date, already reported.
+    for (col in setdiff(intersect(stratify, names(people)), "birth_year")) {
       na <- flag(is.na(people[[col]]), "stratum_na",
                  sprintf("%s is missing for someone in the study population", col),
-                 NA_character_, people$id)
+                 pedigree_path, people$id)
       findings <- collect(findings, na)
     }
     findings <- collect(findings, few_cases(usable, people, stratify))

@@ -56,26 +56,34 @@ validate_pedigree <- function(pedigree, dir, threads, source) {
   read_pedsum_findings(dir, status, source)
 }
 
+# pedsum exits 0 when it finds nothing and 1 when it only reports findings; any other exit
+# (2 blocked, 3 out of memory, ...) is a failure and is reported with the end of its log.
 read_pedsum_findings <- function(dir, status, source) {
   log_path <- file.path(dir, "validate.log")
   found <- if (file.exists(log_path)) {
     data.table::fread(log_path, sep = "\t", colClasses = "character", na.strings = "")
   }
-  if (!is.null(found) && nrow(found) > 0) {
-    per_check <- found[, .N, by = check]
-    return(finding("pedigree_invalid",
-                   sprintf(paste("pedsum validate found: %s; repair the pedigree with pedsum",
-                                 "before the run (step 0); details in",
-                                 "1_check/pedsum/validate.log"),
-                           paste(sprintf("%s (%d)", per_check$check, per_check$N),
-                                 collapse = ", ")),
-                   source, sprintf("%s %s: %s", found$check, found$id, found$detail),
-                   nrow(found)))
+  found_any <- !is.null(found) && nrow(found) > 0
+  if (status == 0 && !is.null(found) && !found_any) {
+    return(no_findings())
   }
-  if (status != 0 || is.null(found)) {
+  message <- character()
+  examples <- character()
+  if (!(status == 1 && found_any)) {
     lines <- tryCatch(readLines(file.path(dir, "pedsum.log")), error = function(e) character())
-    return(finding("pedigree_invalid", sprintf("pedsum validate failed (exit %d)", status),
-                   source, utils::tail(lines, 5)))
+    message <- sprintf("pedsum validate failed (exit %d); the end of 1_check/pedsum/pedsum.log",
+                       status)
+    examples <- utils::tail(lines, 5)
   }
-  no_findings()
+  if (found_any) {
+    per_check <- found[, .N, by = check]
+    message <- c(message, sprintf(
+      paste("pedsum validate found: %s; repair the pedigree with pedsum before the run",
+            "(step 0); details in 1_check/pedsum/validate.log"),
+      paste(sprintf("%s (%d)", per_check$check, per_check$N), collapse = ", ")
+    ))
+    examples <- c(examples, sprintf("%s %s: %s", found$check, found$id, found$detail))
+  }
+  finding("pedigree_invalid", paste(message, collapse = "; "), source, examples,
+          if (found_any) nrow(found) else 1L)
 }

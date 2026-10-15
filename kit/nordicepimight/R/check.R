@@ -25,7 +25,8 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
   files <- unique(stats::na.omit(as.character(traits$table$file_path)))
   files <- files[file.exists(files)]
   trait_files <- if (length(files) > 0) {
-    read_trait_files(files, ped$pedigree, study$study_end, study$stratify %||% character())
+    read_trait_files(files, ped$pedigree, study$study_end, study$stratify %||% character(),
+                     study$pedigree_path)
   }
   mismatches <- pin_mismatches()
   pins <- flag(rep(TRUE, length(mismatches)), "pins_mismatch",

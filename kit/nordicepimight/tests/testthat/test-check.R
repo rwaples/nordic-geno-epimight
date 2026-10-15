@@ -365,3 +365,27 @@ test_that("an invalid setting stops the run and is replaced by its default", {
   }))$study
   expect_equal(study$max_degree, 3L)
 })
+
+test_that("a missing birth_date is one stop that names the pedigree file", {
+  result <- check_fixture(cases$birth_date_missing)
+  stops <- result$findings[severity == "STOP"]
+  expect_equal(stops$code, "birth_date_missing")
+  expect_match(stops$file, "pedigree\\.tsv$")
+})
+
+test_that("pedsum's exit code is reported when it fails, with or without findings", {
+  dir <- tempfile("pedsum")
+  dir.create(dir)
+  writeLines(c("loading", "BLOCKED: cycle"), file.path(dir, "pedsum.log"))
+  writeLines(c("check\tid\trow\tdetail\tn_refs", "cycle\tA\t2\tA -> B -> A\t"),
+             file.path(dir, "validate.log"))
+  blocked <- read_pedsum_findings(dir, 2L, "ped.tsv")
+  expect_match(blocked$message, "failed \\(exit 2\\).*found: cycle \\(1\\)")
+  expect_match(blocked$examples, "BLOCKED: cycle.*cycle A: A -> B -> A")
+  found <- read_pedsum_findings(dir, 1L, "ped.tsv")
+  expect_false(grepl("failed", found$message))
+  unlink(file.path(dir, "validate.log"))
+  killed <- read_pedsum_findings(dir, 3L, "ped.tsv")
+  expect_match(killed$message, "failed \\(exit 3\\)")
+  expect_equal(nrow(read_pedsum_findings(dir, 0L, "ped.tsv")), 1L)
+})
