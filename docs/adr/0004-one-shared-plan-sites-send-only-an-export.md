@@ -14,7 +14,8 @@ the check step's files hold individual-level data, and the result tables hold co
 
 The repository's `plan/` (settings, `traits.tsv`, `analyses.tsv`, optional
 `relative_windows.tsv`) is the same at every site. Each site writes a file in `local/`
-(not committed) with its name, the plan, its data folder, `study_end` and threads.
+(not committed) with its name, the plan, its data folder, its pedigree, `study_end` and
+threads.
 `run.yaml` records the plan's checksum.
 
 A sixth step, `export`, writes `OUT/6_export/`, the only folder a site sends on: the

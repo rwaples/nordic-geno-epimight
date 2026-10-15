@@ -1,5 +1,6 @@
 # The cohort-table cases run on the toy site's data.
 site: cohort_cases
 plan: plan.yaml
-data: ../toy/data
+data_folder: ../toy/data
+pedigree_path: ../toy/data/pedigree.tsv
 study_end: 2023-12-31

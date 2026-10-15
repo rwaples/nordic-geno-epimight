@@ -309,7 +309,7 @@ test_that("a pedigree or trait file that cannot be read stops", {
   writeLines(readLines(file.path(root, "data", "pedigree.tsv")), con)
   close(con)
   site <- yaml::read_yaml(path)
-  site$pedigree <- "pedigree.tsv.gz"
+  site$pedigree_path <- "data/pedigree.tsv.gz"
   yaml::write_yaml(site, path)
   dir.create(file.path(root, "data", "folder"))
   traits <- fread(file.path(root, "plan", "traits.tsv"))
@@ -320,7 +320,7 @@ test_that("a pedigree or trait file that cannot be read stops", {
 })
 
 test_that("a missing data folder, plan or pedigree is file_missing", {
-  for (key in c("data", "plan", "pedigree")) {
+  for (key in c("data_folder", "plan", "pedigree_path")) {
     result <- check_fixture(function(s) {
       s$site[[key]] <- "nope"
       s
@@ -333,9 +333,12 @@ test_that("absolute paths are used as given", {
   expect_equal(resolve_path("/root", c("a.tsv", "/data/b.tsv")), c("/root/a.tsv", "/data/b.tsv"))
   path <- write_fixture()
   site <- yaml::read_yaml(path)
-  site$data <- file.path(dirname(path), "data")
+  site$data_folder <- file.path(dirname(path), "data")
+  site$pedigree_path <- file.path(dirname(path), "data", "pedigree.tsv")
   yaml::write_yaml(site, path)
-  expect_equal(read_study(path)$study$data, normalizePath(site$data))
+  study <- read_study(path)$study
+  expect_equal(study$data_folder, normalizePath(site$data_folder))
+  expect_equal(study$pedigree_path, normalizePath(site$pedigree_path))
 })
 
 test_that("an invalid setting stops the run and is replaced by its default", {

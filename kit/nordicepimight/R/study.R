@@ -1,11 +1,11 @@
 # A run reads two files. The site file (local/<site>.yaml, one per country) says where that
-# site's data are and when its follow-up ends; it names the plan file (plan/initial.yaml),
-# which is the same at every site: the traits, the analyses and the shared settings.
-# Relative paths are resolved from the folder of the file that names them; the pedigree
-# and the trait files from the site's data folder.
+# site's pedigree and trait files are and when its follow-up ends; it names the plan file
+# (plan/initial.yaml), which is the same at every site: the traits, the analyses and the
+# shared settings. Relative paths are resolved from the folder of the file that names
+# them; the trait files from the site's data folder.
 
-SITE_REQUIRED <- c("site", "plan", "data", "study_end")
-SITE_DEFAULTS <- list(pedigree = "pedigree.tsv", threads = 1L)
+SITE_REQUIRED <- c("site", "plan", "data_folder", "pedigree_path", "study_end")
+SITE_DEFAULTS <- list(threads = 1L)
 PLAN_REQUIRED <- c("traits", "analyses", "stratify")
 PLAN_DEFAULTS <- list(relative_windows = NULL, birth_year_bin = 1L, max_degree = 3L,
                       external_parent_cap = 30L, export_min_count = 5L)
@@ -100,19 +100,13 @@ read_study <- function(path) {
   }
   study <- site$values
   study$path <- normalizePath(path)
-  folders <- config_paths(site$values, "data", dirname(study$path), path, folder = TRUE)
-  files <- config_paths(site$values, "plan", dirname(study$path), path)
+  folders <- config_paths(site$values, "data_folder", dirname(study$path), path, folder = TRUE)
+  files <- config_paths(site$values, c("plan", "pedigree_path"), dirname(study$path), path)
   findings <- list(site$findings, folders$findings, files$findings)
-  study$data <- folders$paths$data
+  study$data_folder <- folders$paths$data_folder
+  study$pedigree_path <- files$paths$pedigree_path
   study$plan_path <- files$paths$plan
   study$plan <- NULL
-  if (!is.null(study$data)) {
-    pedigree <- config_paths(site$values, "pedigree", study$data, path)
-    study$pedigree <- pedigree$paths$pedigree
-    findings <- c(findings, pedigree$findings)
-  } else {
-    study$pedigree <- NULL
-  }
   if (!is.null(study$plan_path)) {
     plan <- read_config(study$plan_path, PLAN_REQUIRED, PLAN_DEFAULTS)
     findings <- c(findings, list(plan$findings))

@@ -14,8 +14,8 @@ fixture_spec <- function() {
   )
   outcome <- function(status, age) data.table(id = paste0("c", 1:6), status = status, age = age)
   list(
-    site = list(site = "fixture", plan = "plan/plan.yaml", data = "data",
-                study_end = "2023-12-31"),
+    site = list(site = "fixture", plan = "plan/plan.yaml", data_folder = "data",
+                pedigree_path = "data/pedigree.tsv", study_end = "2023-12-31"),
     plan = list(traits = "traits.tsv", analyses = "analyses.tsv", stratify = "birth_year",
                 birth_year_bin = 25L),
     pedigree = pedigree,

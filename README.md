@@ -1,20 +1,20 @@
 # nordic-geno-epimight
 
- A series of R scripts (kit) to run [EPIMIGHT](https://github.com/BioPsyk/epimight) analyses in parallel across the the registers of Denmark, Norway and Sweden. Birth year-stratified estimates of cumulative incidence fraction (CIF), heritability (h²) and genetic correlation (rg) are produced within country. 
+A series of R scripts (kit) to run [EPIMIGHT](https://github.com/BioPsyk/epimight) analyses in parallel across the registers of Denmark, Norway and Sweden. Birth year-stratified estimates of cumulative incidence function (CIF), heritability (h²) and genetic correlation (rg) are produced within each country.
 
-Repo structure: The repo is split into `plan/` and `local/` folders. The `plan/` folder applies to all countries contains a files describing the traits and the analyses to be conducted. The `local/` folder contains a single config files that is unique to each country describing how to find the input data and a bit about how run the analysis, (e.g. number of cores). The repo also contains some documentation and associated files. 
+Repo structure: The repo is split into `plan/` and `local/` folders. The `plan/` folder applies to all countries and contains files describing the traits and the analyses to be conducted. The `local/` folder contains a single config file, unique to each country, describing how to find the input data and a bit about how to run the analysis (e.g. number of cores). The repo also contains some documentation and associated files.
 
-The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects the output.  In addition to the raw output, the kit can produce plots and summaries of the results, as well as prepare the results for export by censoring personally identifiable information (PII). 
+The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects the output. In addition to the raw output, the kit can produce plots and summaries of the results, as well as prepare the results for export by suppressing small counts.
 
-/# | Step | Description  |
+| # | Step | Description |
 |---|---|---|
-0 | `prepare` | Convert country-specifc registry data to common phenotype and pedigree data formats. Prerequisit for these analyses. | 
-1 | `check` | Checks and validates input data - including both phenotype and pedigree data |
-2 | `cohort` | Selects individuals for analysis Applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
-3 | `epimight` |  Runs EPIMIGHT once for each estimate the analyses need |
-4 | `tables` |  Collects and synthsizes the epimight output |
-5 | `report` |  Prepares plots of the results and summaries |
-6 | `export` |  Prepares the data for export by suppressing PII. |
+| 0 | `prepare` | Convert country-specific registry data to common phenotype and pedigree data formats. Prerequisite for these analyses. |
+| 1 | `check` | Checks and validates input data - including both phenotype and pedigree data |
+| 2 | `cohort` | Selects individuals for analysis, applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
+| 3 | `epimight` | Runs EPIMIGHT once for each estimate the analyses need |
+| 4 | `tables` | Collects and synthesizes the EPIMIGHT output |
+| 5 | `report` | Prepares plots of the results and summaries |
+| 6 | `export` | Prepares the data for export by suppressing PII. |
 
 Each step relies on the output of previous step(s). Rerunning a step deletes the output of
 the steps after it. If an input file changes after `check`, the later steps stop until you
@@ -94,38 +94,39 @@ Start with the initial plan. For the complete one, change `plan:` in your site f
 
 ### Step 0: prepare your data
 
-Each site converts its own registers into the kit's formats, with its own scripts. The
-result is one data folder holding `pedigree.tsv` and one trait file per trait in
-`plan/traits.tsv`, named as its `file` column says (`MDD.tsv`, ...). The formats are
-under [Inputs](#inputs). Build the trait files from the ICD codes in
+Each site converts its own registers into the kit's formats. The trait files go in one
+data folder, one file per trait in `plan/traits.tsv`, named as its `file` column says
+(`MDD.tsv`, ...). The pedigree file can be anywhere; the site file names both. The
+formats are under [Inputs](#inputs). Trait definitions, including ICD codes, are in
 `Definitions/Phenotype_list.tsv`.
 
-The analysis plan (`docs/Firstpass_SAP_Scandinavian_Genealogy.txt`, section 4.1) asks
-for these, which the kit can't check:
+See the statistical analysis plan (`docs/Firstpass_SAP_Scandinavian_Genealogy.txt`) for a list of considerations when preparing this data.
 
-- Remove adoptive links from parent-offspring and sibling relationships.
-- Same-sex parents: keep the birth mother where the birth register identifies her, and
-  set the other parent to missing.
-- Ignore MDD, bipolar disorder and schizophrenia diagnoses before age 10.
-- Twins: the kit counts MZ twins as full siblings. How to remove same-multiple-birth
-  pairs is open question 5 in `docs/open-questions.md`.
+A partial list:
+- Remove known legal but not biological pedigree links:
+  - Adoption
+  - Same-sex parents: keep the birth mother if identified
+- Disregard major depressive disorder (MDD), bipolar disorder (BD), and schizophrenia (SCZ) diagnoses before age 10.
+- Main vs auxiliary (secondary) diagnoses (open question 9).
+- Birth location and civil register - any special handling that is necessary.
+- For making the analysis windows (W1 - W4) implement appropriate filters on diagnosis time. Do not filter by birth year here; that will happen in step 2.
 
 ## Inputs
 
 All tables are tab-separated with a header row. A missing value is `NA` or an empty cell.
 Ids are text, so `001`, `1` and `1.0` are three different people. Relative paths are
-resolved from the folder of the file that names them; the pedigree and the trait files
-from your data folder.
+resolved from the folder of the file that names them; the trait files from your data
+folder.
 
 ### Site file
 
 ```yaml
-site: Denmark                 # the name your results carry
-plan: ../plan/initial.yaml    # the shared plan
-data: /path/to/export/folder  # pedigree.tsv and the trait files
-study_end: 2021-12-31         # end of register follow-up at this site
-pedigree: pedigree.tsv        # optional, the default
-threads: 4                    # optional, default 1
+site: Denmark                         # the name your results carry
+plan: ../plan/initial.yaml            # the shared plan
+data_folder: /path/to/trait/files     # the trait files
+pedigree_path: /path/to/pedigree.tsv  # the pedigree; it need not be in data_folder
+study_end: 2021-12-31                 # end of register follow-up at this site
+threads: 4                            # optional, default 1
 ```
 
 ### Plan

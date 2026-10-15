@@ -9,19 +9,19 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
   if (is.null(study)) {
     return(list(findings = s$findings, inputs = NULL, study = NULL))
   }
-  traits <- if (!is.null(study$traits)) read_traits(study$traits, study$data)
+  traits <- if (!is.null(study$traits)) read_traits(study$traits, study$data_folder)
   analyses <- if (!is.null(study$analyses)) {
     read_analyses(study$analyses, traits$table, study$max_degree)
   }
   windows <- if (!is.null(study$relative_windows)) {
     read_relative_windows(study$relative_windows, traits$table)
   }
-  ped <- if (!is.null(study$pedigree)) {
-    read_pedigree(study$pedigree, study$stratify %||% character(), study$birth_year_bin)
+  ped <- if (!is.null(study$pedigree_path)) {
+    read_pedigree(study$pedigree_path, study$stratify %||% character(), study$birth_year_bin)
   }
   validated <- if (!is.null(ped$pedigree)) {
     validate(ped$pedigree, file.path(dir, "pedsum"), study$threads, study$external_parent_cap,
-             study$pedigree)
+             study$pedigree_path)
   }
   files <- unique(stats::na.omit(as.character(traits$table$file_path)))
   files <- files[file.exists(files)]
@@ -45,9 +45,9 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
 
 input_files <- function(study_path) {
   study <- read_study(study_path)$study
-  traits <- if (!is.null(study$traits)) read_traits(study$traits, study$data)$table
+  traits <- if (!is.null(study$traits)) read_traits(study$traits, study$data_folder)$table
   trait_files <- unique(stats::na.omit(traits$file_path))
-  paths <- c(site = study$path, plan_files(study), pedigree = study$pedigree,
+  paths <- c(site = study$path, plan_files(study), pedigree = study$pedigree_path,
              stats::setNames(trait_files, make.unique(basename(trait_files))))
   paths[file.exists(paths)]
 }

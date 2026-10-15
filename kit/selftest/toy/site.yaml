@@ -1,6 +1,7 @@
 # The self-test's toy site. A real site file lives in local/ and points at the shared plan.
 site: toy
 plan: plan/plan.yaml
-data: data
+data_folder: data
+pedigree_path: data/pedigree.tsv
 study_end: 2023-12-31
 threads: 2
