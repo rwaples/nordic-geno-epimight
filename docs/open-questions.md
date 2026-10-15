@@ -3,7 +3,8 @@
 Questions 1 to 5 are about choices in the kit and the shared plan; the answers may change
 them. Questions 6 to 8 ask how to read the SAP's W2 window
 (`Firstpass_SAP_Scandinavian_Genealogy.txt`, sections 4.2 and 6.3). The kit needs the
-answers before it can support that window.
+answers before it can support that window. Question 9 is about how sites build the
+trait files.
 
 1. **Which relatives count.** A relative counts only if they have a row in the trait
    file, after any relatives' follow-up window. Someone without a row is unobserved,
@@ -55,3 +56,15 @@ answers before it can support that window.
    parent of someone born 1985 to 2005, each counted once? Which birth-year strata do
    they fall into? Would a birth range that covers the parent generation be close
    enough? It would also take in people with no children and parents of other cohorts.
+
+## Phenotype definitions
+
+9. **Main and secondary diagnoses.** The SAP (section 5) counts a hospital contact when
+   the code is the main (primary) diagnosis or a secondary diagnosis, and the first such
+   contact sets the age at onset. Should every country count secondary diagnoses the
+   same way, given that the registers may record them differently and over different
+   years? Should some traits count main diagnoses only, for example ones often recorded
+   in passing, such as hypertension, obesity or dyslipidaemia? And should a
+   main-diagnosis-only run be a sensitivity analysis, as W3 is for inpatient diagnoses?
+   The kit can't tell the two apart: each site applies the rule when it builds the
+   trait files (step 0).
