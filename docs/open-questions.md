@@ -20,3 +20,10 @@ The kit made a choice on each of these. The answers may change it.
    code the kit uses for half siblings. The kit keeps the two apart, but tables and plots
    that show both are easy to misread. Could the abbreviation become `HST`? The shared
    plan (`plan/traits.tsv`, `plan/analyses.tsv`) will follow.
+
+5. **Twins in each site's data preparation.** The SAP removes same-multiple-birth pairs
+   from full siblings. The kit leaves this to each site, but it finds full siblings in
+   the pedigree and counts MZ twins among them, so a site can only remove a pair by
+   leaving one twin out of the trait files. That twin is then neither a proband nor any
+   other kind of relative. Is that acceptable, or should the kit read a multiple-birth
+   column in the pedigree and drop only the twin pairs from full siblings?
