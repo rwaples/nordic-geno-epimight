@@ -111,13 +111,16 @@ A partial list:
 - Birth location and civil register - any special handling that is necessary.
 - For making the analysis windows (W1 - W4) implement appropriate filters on diagnosis time. Do not filter by birth year here; that will happen in step 2.
 
-Last, repair the pedigree with pedsum. The kit never changes the pedigree. Its check step
-runs `pedsum validate` and stops on anything pedsum finds, such as a parent without a row
-of its own, a duplicate row or a sex that contradicts a parent role. Add a `birth_year`
-column (the year of `birth_date`) and run:
+Last, repair the pedigree with pedsum. pedsum owns the pedigree (ADR 0005): the kit
+never changes it and has no pedigree checks of its own. Its check step runs `pedsum
+validate` on your pedigree file and stops on anything pedsum finds, such as a parent
+without a row of its own, a duplicate row, a sex that contradicts a parent role, a birth
+date that isn't `YYYY-MM-DD` or a parent born after their child. Run the same command
+first:
 
 ```sh
-pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year
+pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year \
+  --birth-date-col birth_date --twin-max-days 1
 gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
 ```
 
@@ -126,6 +129,11 @@ Then point `pedigree_path` at `pedigree_validated.tsv`. pedsum adds a founder ro
 `pedsum/validate.log` first. A parent id with many children is probably a code for an
 unknown parent; rerun with `--missing-parent-token <code>`. If pedsum stops or finds
 something it doesn't repair, see its `--drop-offending` and `--break-cycles` options.
+
+`--twin-max-days 1` makes full siblings born at most a day apart a multiple-birth set (the
+`multiple_birth_set` column). The kit finds the sets the same way and leaves their pairs
+out of `FS` (see [plan/analyses.tsv](#plananalysestsv)). Check the `multiple births:` line pedsum prints.
+If pedsum warns that a set spans more than a day, the birth dates may be placeholders.
 
 ## Inputs
 
@@ -170,10 +178,11 @@ relationship analysed: 1 for PO and FS, 2 for HS, mHS, pHS, Av and 1G, 3 for 1C.
 ### Pedigree
 
 One row per person with `id, mother, father, sex, birth_date`, plus any column you
-stratify on. Write an unknown parent as `NA`, empty or `-1`. Use `0` only if 0 is a real
-id. Sex is 1 for male, 2 for female and 0 for unknown. Dates are `YYYY-MM-DD`. Everyone
-in the trait files needs a `birth_date`; other people may leave it empty. pedsum validate
-must find nothing wrong with the file (step 0).
+stratify on. Write an unknown parent as `NA`, empty, `-1` or any other token pedsum reads
+as missing. Use `0` only if 0 is a real id. Sex is 1 for male, 2 for female and 0 for
+unknown. Dates are `YYYY-MM-DD`. Everyone in the trait files needs a `birth_date`; other
+people may leave it empty. An optional `birth_year` must agree with `birth_date`. pedsum
+validate must find nothing wrong with the file (step 0).
 
 ### Trait files
 
@@ -248,7 +257,7 @@ direction, so list both rows if you want both.
 | `relationship` | Relatives | Relatedness |
 |---|---|---|
 | `PO` | parents | 0.5 |
-| `FS` | full siblings, MZ twins included | 0.5 |
+| `FS` | full siblings, except members of one multiple birth | 0.5 |
 | `HS` | half siblings | 0.25 |
 | `mHS`, `pHS` | maternal or paternal half siblings | 0.25 |
 | `Av` | aunts and uncles | 0.25 |
@@ -257,6 +266,12 @@ direction, so list both rows if you want both.
 
 A relative counts only if they have a row in the trait file. PO, Av and 1G follow the
 pedigree, not birth order: an uncle younger than his nephew is still his uncle.
+
+Twins, triplets and other members of one multiple-birth set (step 0) are not each other's
+`FS` relatives, as the SAP says (4.1), whatever their sex. They stay probands, and each
+stays every other kind of relative: a twin's children are still the co-twin's nieces and
+nephews. Zygosity is unknown, so the kit doesn't count any pair as MZ. The sandwich SEs
+still treat the twins as a related pair.
 
 ## Outputs
 

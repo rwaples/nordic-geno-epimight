@@ -25,17 +25,13 @@ trait files.
    that show both are easy to misread. Could the abbreviation become `HST`? The shared
    plan (`plan/traits.tsv`, `plan/analyses.tsv`) will follow.
 
-5. **Twins in each site's data preparation.** The SAP removes same-multiple-birth pairs
-   from full siblings. The kit leaves this to each site, but it finds full siblings in
-   the pedigree and counts MZ twins among them, so a site can only remove a pair by
-   leaving one twin out of the trait files. That twin is then neither a proband nor any
-   other kind of relative. Is that acceptable, or should the kit read a multiple-birth
-   column in the pedigree and drop only the twin pairs from full siblings?
-
-   Which pairs go: every same-multiple-birth pair, or only same-sex pairs? The SAP gives
-   MZ twins as the reason, and opposite-sex twins cannot be MZ, so they could stay in
-   as full siblings. Same-sex pairs include both MZ and DZ twins, and the registers may
-   not say which.
+5. **Which multiple-birth pairs leave full siblings.** The SAP removes same-multiple-birth
+   pairs from full siblings (4.1). The kit now does this itself (ADR 0005): pedsum puts
+   full siblings born at most a day apart into one multiple-birth set, and the kit leaves
+   every pair from one set out of `FS`. Both people stay probands and every other kind of
+   relative. Is every pair right, or only same-sex pairs? The SAP gives MZ twins as the
+   reason, and opposite-sex twins cannot be MZ, so they could stay in as full siblings.
+   Same-sex pairs include both MZ and DZ twins, and the registers may not say which.
 
 ## The W2 window
 

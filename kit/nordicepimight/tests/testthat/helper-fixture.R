@@ -62,8 +62,12 @@ write_fixture <- function(edit = identity) {
   file.path(dir, "site.yaml")
 }
 
-# pedsum takes a few seconds per run, so only the tests about the pedigree run it.
-skip_pedsum <- function(pedigree, dir, ...) no_findings()
+# pedsum takes a few seconds per run, so only the tests about the pedigree run it. The
+# others read the fixture's pedigree as pedsum writes it when it finds nothing.
+skip_pedsum <- function(path, dir, ...) {
+  list(pedigree = read_tsv_text(path)[, multiple_birth_set := NA_character_],
+       findings = no_findings())
+}
 
 check_fixture <- function(edit = identity, pedsum = FALSE) {
   path <- write_fixture(edit)

@@ -38,6 +38,15 @@ windows <- data.table(
 )
 ped <- windows[ped, on = "generation"]
 ped[, birth_date := as.IDate(from + floor(runif(.N) * (as.integer(to - from) + 1)))]
+# Full sibs drawn a day or less apart would be a multiple birth (pedsum --twin-max-days 1),
+# whose pairs the kit leaves out of FS and make_epimight_tte does not. The toy has none: the
+# later sib moves on two days, which draws nothing and so changes no outcome.
+repeat {
+  sibs <- ped[!is.na(mother) & !is.na(father)][order(birth_date)]
+  close <- sibs[, .(id, gap = birth_date - shift(birth_date)), by = .(mother, father)][gap <= 1L]
+  if (nrow(close) == 0) break
+  ped[id %in% close$id, birth_date := birth_date + 2L]
+}
 
 own <- unique(pool[, .(id = person_id, trait, status = trait_status, old_age = trait_age,
                        born_at_year)])

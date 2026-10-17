@@ -91,7 +91,7 @@ test_that("relatives come from the file, or from the probands with filter_relati
 })
 
 test_that("vertical relationships count only the person's elders", {
-  p <- fixture_spec()$pedigree
+  p <- fixture_spec()$pedigree[, multiple_birth_set := NA_character_]
   pairs <- relative_pairs(p, c("PO", "Av", "1G", "FS", "1C"))
   of <- function(person, rel) sort(pairs[person_id == person & relationship == rel, relative_id])
   expect_equal(of("c1", "PO"), c("p1", "p2"))
@@ -103,6 +103,31 @@ test_that("vertical relationships count only the person's elders", {
   expect_equal(of("c1", "FS"), c("c2", "c3"))
   expect_equal(of("c1", "1C"), c("c4", "c5", "c6"))
   expect_equal(of("c4", "1C"), c("c1", "c2", "c3"))
+})
+
+test_that("members of one multiple-birth set are not each other's FS", {
+  p <- fixture_spec()$pedigree[, multiple_birth_set := c(rep(NA, 6), "1", "1", "1", "2", "2", NA)]
+  pairs <- relative_pairs(p, c("FS", "1C"))
+  of <- function(person, rel) sort(pairs[person_id == person & relationship == rel, relative_id])
+  expect_equal(of("c1", "FS"), character())
+  expect_equal(of("c4", "FS"), "c6")
+  expect_equal(of("c6", "FS"), c("c4", "c5"))
+  expect_equal(of("c1", "1C"), c("c4", "c5", "c6"))
+})
+
+test_that("pedsum finds a twin pair and a triplet set, and the cohort keeps them as probands", {
+  checked <- check_fixture(function(s) {
+    triplets <- c("1950-02-01", "1950-02-02", "1950-02-02")
+    s$pedigree[id %in% c("c1", "c2", "c3"), birth_date := triplets]
+    s$pedigree[id %in% c("c4", "c5"), birth_date := "1951-05-01"]
+    s
+  }, pedsum = TRUE)
+  expect_equal(codes(checked, "STOP"), character())
+  sets <- checked$inputs$pedigree[!is.na(multiple_birth_set), .N, by = multiple_birth_set]
+  expect_setequal(sets$N, c(3L, 2L))
+  cohort <- build_cohort(checked$inputs)$cohort[trait == "t1"]
+  expect_setequal(cohort$person_id, paste0("c", 1:6))
+  expect_equal(cohort[order(person_id), relatives_n], c(0L, 0L, 0L, 1L, 1L, 2L))
 })
 
 test_that("only relatives with a trait-file row count", {

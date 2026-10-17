@@ -90,11 +90,6 @@ The kit can't check these. The README lists them under step 0:
 - Remove adoptive links from parent-offspring and sibling relationships.
 - Same-sex parents: keep the birth mother where known and set the other parent missing.
 - Ignore MDD, BD and SCZ diagnoses before age 10. This needs the diagnosis history.
-- Remove same-multiple-birth pairs from full siblings (4.1). The kit finds full siblings
-  in the pedigree and counts MZ twins among them
-  (`kit/nordicepimight/R/relationships.R:8`), so a site can only do this by leaving one
-  twin of each pair out of the trait files. Open question 5 asks whether that is
-  acceptable.
 - The lower age limit for ASD is still open in the SAP.
 
 The SAP proposes removing anyone ever diagnosed with BD from MDD cases. The kit's
@@ -113,4 +108,5 @@ analysis can't use "ever".
 ## Questions for the collaborators
 
 The analysis windows, random-effects pooling (item 2), disclosure (item 4), the rg pairs
-and the handling of twins (open question 5) need the collaborators' answers.
+and which twin pairs leave full siblings (open question 5) need the collaborators'
+answers. The kit leaves every same-multiple-birth pair out of `FS` (SAP 4.1, ADR 0005).

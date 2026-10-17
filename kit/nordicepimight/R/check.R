@@ -2,7 +2,8 @@
 # 1_check/findings.tsv, 1_check/run.yaml and, when nothing stops the run,
 # 1_check/inputs.rds, the parsed inputs the later steps read.
 
-# `validate` runs pedsum on the pedigree; tests that are not about the pedigree pass a stub.
+# `validate` runs pedsum on the pedigree file; tests that are not about the pedigree pass a
+# stub that reads the file as pedsum would write it.
 check_inputs <- function(study_path, dir, validate = validate_pedigree) {
   s <- read_study(study_path)
   study <- s$study
@@ -16,11 +17,12 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
   windows <- if (!is.null(study$relative_windows)) {
     read_relative_windows(study$relative_windows, traits$table)
   }
-  ped <- if (!is.null(study$pedigree_path)) {
-    read_pedigree(study$pedigree_path, study$stratify %||% character(), study$birth_year_bin)
+  pedsum <- if (!is.null(study$pedigree_path)) {
+    validate(study$pedigree_path, file.path(dir, "pedsum"), study$threads)
   }
-  pedsum <- if (!is.null(ped$pedigree)) {
-    validate(ped$pedigree, file.path(dir, "pedsum"), study$threads, study$pedigree_path)
+  ped <- if (!is.null(pedsum$pedigree)) {
+    prepare_pedigree(pedsum$pedigree, study$stratify %||% character(), study$birth_year_bin,
+                     study$pedigree_path)
   }
   files <- unique(stats::na.omit(as.character(traits$table$file_path)))
   files <- files[file.exists(files)]
@@ -33,7 +35,7 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
                "the installed package differs from its pin", examples = mismatches)
 
   findings <- collect(s$findings, traits$findings, analyses$findings, windows$findings,
-                      ped$findings, pedsum, trait_files$findings, pins)
+                      pedsum$findings, ped$findings, trait_files$findings, pins)
   inputs <- if (!has_stop(findings)) {
     list(study = study, traits = traits$table, analyses = analyses$table,
          relative_windows = windows$table, pedigree = ped$pedigree,
@@ -100,7 +102,10 @@ run_check <- function(study_path, out, dir) {
     return(FALSE)
   }
   saveRDS(result$inputs, file.path(dir, "inputs.rds"))
-  cat(sprintf("check: passed with %d warning(s); %d people in the study population\n",
-              sum(findings$severity == "WARN"), length(result$inputs$population)))
+  sets <- result$inputs$pedigree[!is.na(multiple_birth_set)]
+  cat(sprintf(paste("check: passed with %d warning(s); %d people in the study population;",
+                    "%d multiple-birth sets of %d people\n"),
+              sum(findings$severity == "WARN"), length(result$inputs$population),
+              uniqueN(sets$multiple_birth_set), nrow(sets)))
   TRUE
 }

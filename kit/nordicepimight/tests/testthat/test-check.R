@@ -142,25 +142,13 @@ cases <- list(
     with_windows(s, data.table(trait = "t1", relationship = "PO",
                                max_followup_relatives = c("50", "none")))
   },
-  pedigree_missing_column = function(s) {
-    s$pedigree[, sex := NULL]
-    s
-  },
   birth_date_missing = function(s) {
     s$trait_files <- lapply(s$trait_files, trait_rows, "t", s$pedigree)
     s$pedigree[id == "c1", birth_date := NA]
     s
   },
-  birth_date_invalid = function(s) {
-    s$pedigree[id == "p4", birth_date := "1927/01/01"]
-    s
-  },
   stratify_not_in_pedigree = function(s) {
     s$plan$stratify <- c("birth_year", "region")
-    s
-  },
-  pedigree_birth_year_replaced = function(s) {
-    s$pedigree[, birth_year := 1]
     s
   },
   pedigree_invalid = function(s) {
@@ -251,7 +239,7 @@ test_that("an unreadable site file stops", {
 })
 
 test_that("a stop leaves no inputs for the next step", {
-  expect_null(check_fixture(cases$birth_date_invalid)$inputs)
+  expect_null(check_fixture(cases$birth_date_missing)$inputs)
 })
 
 test_that("rule columns parse with the script's defaults", {
@@ -304,30 +292,54 @@ test_that("a founder pedsum added, with no birth date or trait row, passes", {
   expect_equal(result$inputs$pedigree[id == "c4", father], "X9")
 })
 
-test_that("a birth_year column that matches birth_date is not replaced with a warning", {
+# Each of these the kit once checked itself; pedsum now finds them (ADR 0005).
+pedsum_stops <- list(
+  sex_column_missing = function(s) {
+    s$pedigree[, sex := NULL]
+    s
+  },
+  birth_date_not_iso = function(s) {
+    s$pedigree[id == "p4", birth_date := "1927/01/01"]
+    s
+  },
+  birth_year_differs = function(s) {
+    s$pedigree[, birth_year := substr(birth_date, 1, 4)][id == "c1", birth_year := "1949"]
+    s
+  },
+  child_born_before_parent = function(s) {
+    s$pedigree[id == "c1", birth_date := "1920-01-01"]
+    s
+  }
+)
+for (name in names(pedsum_stops)) {
+  local({
+    edit <- pedsum_stops[[name]]
+    test_that(paste("pedsum stops a pedigree with", name), {
+      expect_contains(codes(check_fixture(edit, pedsum = TRUE), "STOP"), "pedigree_invalid")
+    })
+  })
+}
+
+test_that("pedsum reads the site's file: its missing-parent tokens and birth_year", {
   result <- check_fixture(function(s) {
+    s$pedigree[, `:=`(mother = fcoalesce(mother, "."), father = fcoalesce(father, "NULL"))]
     s$pedigree[, birth_year := substr(birth_date, 1, 4)]
     s
-  })
-  expect_false("pedigree_birth_year_replaced" %in% codes(result))
+  }, pedsum = TRUE)
+  expect_equal(codes(result, "STOP"), character())
+  expect_true(all(is.na(result$inputs$pedigree[id == "gp1", c(mother, father)])))
+  expect_equal(result$inputs$pedigree[id == "c1", birth_year], 1950L)
 })
 
-test_that("a pedigree or trait file that cannot be read stops", {
+test_that("a trait file that cannot be read stops", {
   path <- write_fixture()
   root <- dirname(path)
-  # A gzipped pedigree: fread needs R.utils for it, which the kit does not install.
-  con <- gzfile(file.path(root, "data", "pedigree.tsv.gz"), "w")
-  writeLines(readLines(file.path(root, "data", "pedigree.tsv")), con)
-  close(con)
-  site <- yaml::read_yaml(path)
-  site$pedigree_path <- "data/pedigree.tsv.gz"
-  yaml::write_yaml(site, path)
   dir.create(file.path(root, "data", "folder"))
   traits <- fread(file.path(root, "plan", "traits.tsv"))
   traits[1, file := "folder"]
   fwrite(traits, file.path(root, "plan", "traits.tsv"), sep = "\t")
   result <- check_inputs(path, file.path(root, "out"), validate = skip_pedsum)
-  expect_contains(codes(result), c("pedigree_unreadable", "trait_file_unreadable"))
+  expect_contains(codes(result), "trait_file_unreadable")
 })
 
 test_that("a missing data folder, plan or pedigree is file_missing", {

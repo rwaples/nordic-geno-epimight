@@ -1,59 +1,30 @@
 # The pedigree file: one row per person with id, mother, father, sex and birth_date, plus
-# any columns the study stratifies on. Ids are text. An unknown parent is NA, blank or -1.
-# The site repairs the pedigree with pedsum (Python) before the run; the kit uses the file
-# as it is and only checks it, with pedsum validate, which must find nothing.
+# any columns the study stratifies on. pedsum owns the pedigree (ADR 0005): it reads the
+# site's file, checks it and must find nothing, and the kit reads the copy pedsum writes.
+# The kit never parses the site's file itself and adds no pedigree checks of its own.
 
-PEDIGREE_COLUMNS <- c("id", "mother", "father", "sex", "birth_date")
+# Full sibs born at most this many days apart form a multiple-birth set; 1 also catches
+# twins born either side of midnight.
+TWIN_MAX_DAYS <- 1L
 
-read_pedigree <- function(path, stratify, birth_year_bin) {
-  dt <- read_tsv_text(path)
-  if (inherits(dt, "error")) {
-    return(list(pedigree = NULL, findings = finding("pedigree_unreadable", conditionMessage(dt),
-                                                    path)))
-  }
-  missing <- flag(!(PEDIGREE_COLUMNS %in% names(dt)), "pedigree_missing_column",
-                  "required column missing", path, PEDIGREE_COLUMNS)
-  if (!is.null(missing)) {
-    return(list(pedigree = NULL, findings = collect(missing)))
-  }
-  for (col in c("mother", "father")) dt[get(col) %in% "-1", (col) := NA_character_]
-  birth <- as_date(dt$birth_date)
-  stratify_extra <- setdiff(stratify, "birth_year")
-  own_year <- if ("birth_year" %in% names(dt)) suppressWarnings(as.integer(dt$birth_year))
-  year <- data.table::year(birth)
-  year_differs <- !is.null(own_year) &&
-    any(xor(is.na(own_year), is.na(year)) | own_year != year, na.rm = TRUE)
-  f <- list(
-    flag(!is.na(dt$birth_date) & is.na(birth), "birth_date_invalid",
-         "birth_date must be a date, YYYY-MM-DD", path, sprintf("%s: %s", dt$id, dt$birth_date)),
-    flag(!(stratify_extra %in% names(dt)), "stratify_not_in_pedigree",
-         "a stratify column is not in the pedigree file", path, stratify_extra),
-    flag(year_differs & "birth_year" %in% stratify, "pedigree_birth_year_replaced",
-         "the pedigree's own birth_year column differs from the year of birth_date and is replaced",
-         path, "birth_year", severity = "WARN")
-  )
-  dt[, birth_date := birth]
-  dt[, birth_year := year]
-  if ("birth_year" %in% stratify) {
-    dt[, birth_year := as.integer(birth_year %/% birth_year_bin * birth_year_bin)]
-  }
-  list(pedigree = dt, findings = collect(f))
-}
-
-# Runs pedsum validate on the pedigree in `dir`. Returns the findings: none when pedsum
-# finds nothing, else one STOP, because any repair belongs in the site's own pedsum run.
-validate_pedigree <- function(pedigree, dir, threads, source) {
+# Runs pedsum validate on the site's pedigree file and reads back the pedigree it wrote
+# (validate.tsv.gz, every column as text). Returns list(pedigree, findings):
+# no findings when pedsum finds nothing, else one STOP, because any repair belongs in the
+# site's own pedsum run (step 0). The pedigree is NULL when pedsum wrote none.
+validate_pedigree <- function(path, dir, threads) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
-  input <- file.path(dir, "pedsum_input.tsv")
-  data.table::fwrite(pedigree[, .(id, mother, father, sex,
-                                  birth_year = data.table::year(birth_date))],
-                     input, sep = "\t", na = "")
   log <- file.path(dir, "pedsum.log")
   status <- system2(Sys.which("python"),
-                    c("-I", "-m", "pedsum", "validate", "--in", input, "--out", dir,
-                      "--birth-year-col", "birth_year", "--threads", threads),
+                    c("-I", "-m", "pedsum", "validate", "--in", path, "--out", dir,
+                      "--birth-year-col", "birth_year", "--birth-date-col", "birth_date",
+                      "--twin-max-days", TWIN_MAX_DAYS, "--threads", threads),
                     stdout = log, stderr = log)
-  read_pedsum_findings(dir, status, source)
+  written <- file.path(dir, "validate.tsv.gz")
+  pedigree <- if (file.exists(written)) {
+    data.table::fread(cmd = paste("gzip -dc", shQuote(written)), sep = "\t",
+                      colClasses = "character", na.strings = "", showProgress = FALSE)
+  }
+  list(pedigree = pedigree, findings = read_pedsum_findings(dir, status, path))
 }
 
 # pedsum exits 0 when it finds nothing and 1 when it only reports findings; any other exit
@@ -86,4 +57,21 @@ read_pedsum_findings <- function(dir, status, source) {
   }
   finding("pedigree_invalid", paste(message, collapse = "; "), source, examples,
           if (found_any) nrow(found) else 1L)
+}
+
+# The kit's columns on pedsum's pedigree: an unknown parent as NA, birth_date as a date,
+# birth_year from it (binned when the study stratifies on it), and multiple_birth_set (NA
+# outside a set). pedsum keeps each row's own missing-parent token (-1, ., NA, ...); once
+# it finds nothing, every other parent has a row, so a parent without one is unknown.
+prepare_pedigree <- function(dt, stratify, birth_year_bin, path) {
+  stratify_extra <- setdiff(stratify, "birth_year")
+  missing <- flag(!(stratify_extra %in% names(dt)), "stratify_not_in_pedigree",
+                  "a stratify column is not in the pedigree file", path, stratify_extra)
+  for (col in c("mother", "father")) dt[!(get(col) %chin% id), (col) := NA_character_]
+  dt[, birth_date := as_date(birth_date)]
+  dt[, birth_year := data.table::year(birth_date)]
+  if ("birth_year" %in% stratify) {
+    dt[, birth_year := as.integer(birth_year %/% birth_year_bin * birth_year_bin)]
+  }
+  list(pedigree = dt, findings = collect(missing))
 }

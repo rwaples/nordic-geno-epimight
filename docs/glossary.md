@@ -25,6 +25,10 @@ _Avoid_: results (the rest of `OUT/` holds individual-level data)
 One row per person with their mother, father, sex and birth date.
 _Avoid_: genealogy, parent table
 
+**Multiple-birth set**:
+Full siblings born at most a day apart, as pedsum finds them from birth dates: twins, triplets and so on. Their pairs are not `FS` relatives.
+_Avoid_: twin pair (a set may hold three or more), MZ (zygosity is unknown)
+
 **Trait**:
 A named definition in the trait list: one trait file plus the follow-up and second-trait rules applied to it.
 _Avoid_: phenotype, variant
