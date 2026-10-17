@@ -331,6 +331,14 @@ test_that("pedsum reads the site's file: its missing-parent tokens and birth_yea
   expect_equal(result$inputs$pedigree[id == "c1", birth_year], 1950L)
 })
 
+test_that("a pedigree path with a space reaches pedsum whole", {
+  path <- write_fixture()
+  spaced <- file.path(dirname(dirname(path)), paste(basename(dirname(path)), "site data"))
+  file.rename(dirname(path), spaced)
+  result <- check_inputs(file.path(spaced, "site.yaml"), file.path(spaced, "out"))
+  expect_equal(codes(result, "STOP"), character())
+})
+
 test_that("a trait file that cannot be read stops", {
   path <- write_fixture()
   root <- dirname(path)

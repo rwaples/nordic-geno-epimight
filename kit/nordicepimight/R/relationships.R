@@ -38,6 +38,10 @@ relative_pairs <- function(pedigree, relationships) {
   ))
   pairs[, code := as.character(code)]
   birth_set <- pedigree$multiple_birth_set
+  if (is.null(birth_set)) {
+    stop("the checked pedigree has no multiple_birth_set column; rerun the check step",
+         call. = FALSE)
+  }
   pairs <- pairs[!(code == "FS" & fcoalesce(birth_set[first_id] == birth_set[second_id], FALSE))]
   out <- rbindlist(lapply(seq_len(nrow(wanted)), function(i) {
     p <- pairs[code %in% wanted$pair_codes[[i]]]

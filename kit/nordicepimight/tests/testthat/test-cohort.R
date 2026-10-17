@@ -113,6 +113,7 @@ test_that("members of one multiple-birth set are not each other's FS", {
   expect_equal(of("c4", "FS"), "c6")
   expect_equal(of("c6", "FS"), c("c4", "c5"))
   expect_equal(of("c1", "1C"), c("c4", "c5", "c6"))
+  expect_error(relative_pairs(fixture_spec()$pedigree, "FS"), "rerun the check step")
 })
 
 test_that("pedsum finds a twin pair and a triplet set, and the cohort keeps them as probands", {

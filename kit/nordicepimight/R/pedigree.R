@@ -15,7 +15,8 @@ validate_pedigree <- function(path, dir, threads) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   log <- file.path(dir, "pedsum.log")
   status <- system2(Sys.which("python"),
-                    c("-I", "-m", "pedsum", "validate", "--in", path, "--out", dir,
+                    c("-I", "-m", "pedsum", "validate", "--in", shQuote(path),
+                      "--out", shQuote(dir),
                       "--birth-year-col", "birth_year", "--birth-date-col", "birth_date",
                       "--twin-max-days", TWIN_MAX_DAYS, "--threads", threads),
                     stdout = log, stderr = log)
