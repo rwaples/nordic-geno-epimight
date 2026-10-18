@@ -18,7 +18,8 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
     read_relative_windows(study$relative_windows, traits$table)
   }
   pedsum <- if (!is.null(study$pedigree_path)) {
-    validate(study$pedigree_path, file.path(dir, "pedsum"), study$threads)
+    validate(study$pedigree_path, file.path(dir, "pedsum"), study$threads,
+             study$multiple_birth_column)
   }
   ped <- if (!is.null(pedsum$pedigree)) {
     prepare_pedigree(pedsum$pedigree, study$stratify %||% character(), study$birth_year_bin,

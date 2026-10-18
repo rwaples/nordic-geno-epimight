@@ -309,6 +309,15 @@ pedsum_stops <- list(
   child_born_before_parent = function(s) {
     s$pedigree[id == "c1", birth_date := "1920-01-01"]
     s
+  },
+  multiple_birth_column_missing = function(s) {
+    s$site$multiple_birth_column <- "delivery"
+    s
+  },
+  multiple_birth_of_cousins = function(s) {
+    s$site$multiple_birth_column <- "delivery"
+    s$pedigree[, delivery := fifelse(id %in% c("c1", "c4"), "D1", NA_character_)]
+    s
   }
 )
 for (name in names(pedsum_stops)) {
@@ -329,6 +338,21 @@ test_that("pedsum reads the site's file: its missing-parent tokens and birth_yea
   expect_equal(codes(result, "STOP"), character())
   expect_true(all(is.na(result$inputs$pedigree[id == "gp1", c(mother, father)])))
   expect_equal(result$inputs$pedigree[id == "c1", birth_year], 1950L)
+})
+
+test_that("the site's own multiple-birth column replaces sets found from birth dates", {
+  result <- check_fixture(function(s) {
+    s$site$multiple_birth_column <- "delivery"
+    s$pedigree[, delivery := fifelse(id %in% c("c4", "c5"), "D1", NA_character_)]
+    s$pedigree[id %in% c("c1", "c2"), birth_date := "1950-02-01"]
+    s
+  }, pedsum = TRUE)
+  expect_equal(codes(result, "STOP"), character())
+  sets <- result$inputs$pedigree[!is.na(multiple_birth_set)]
+  expect_setequal(sets$id, c("c4", "c5"))
+  expect_false("delivery" %in% names(result$inputs$pedigree))
+  fs <- build_cohort(result$inputs)$cohort[trait == "t1" & relatives_kind == "FS"]
+  expect_equal(fs[order(person_id), relatives_n], c(2L, 2L, 2L, 1L, 1L, 2L))
 })
 
 test_that("a pedigree path with a space reaches pedsum whole", {
@@ -381,9 +405,13 @@ test_that("an invalid setting stops the run and is replaced by its default", {
   expect_contains(codes(result, "STOP"), "config_value_invalid")
   study <- read_study(write_fixture(function(s) {
     s$plan$max_degree <- 9L
+    s$site$multiple_birth_column <- c("delivery", "twin")
     s
-  }))$study
-  expect_equal(study$max_degree, 3L)
+  }))
+  expect_equal(study$study$max_degree, 3L)
+  expect_null(study$study$multiple_birth_column)
+  expect_match(study$findings$message, "multiple_birth_column must be one column name",
+               all = FALSE)
 })
 
 test_that("a missing birth_date is one stop that names the pedigree file", {

@@ -380,6 +380,7 @@ run_record <- function(out, inputs, epimight, tables) {
       stratify = study$stratify, birth_year_bin = study$birth_year_bin,
       study_end = format(study$study_end), max_degree = study$max_degree,
       threads = study$threads,
+      multiple_births = multiple_birth_source(study$multiple_birth_column)$description,
       pooling = POOLED_METHOD, ages = "floored to whole years",
       relatedness = as.list(relatedness[unique(inputs$analyses$relationship)])
     ),

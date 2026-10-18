@@ -26,7 +26,7 @@ One row per person with their mother, father, sex and birth date.
 _Avoid_: genealogy, parent table
 
 **Multiple-birth set**:
-Full siblings born at most a day apart, as pedsum finds them from birth dates: twins, triplets and so on. Their pairs are not `FS` relatives.
+Full siblings born in one delivery: twins, triplets and so on. pedsum finds them from birth dates (born at most a day apart), or reads them from the register's own id in the site's `multiple_birth_column`. Their pairs are not `FS` relatives.
 _Avoid_: twin pair (a set may hold three or more), MZ (zygosity is unknown)
 
 **Trait**:

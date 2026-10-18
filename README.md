@@ -135,6 +135,16 @@ something it doesn't repair, see its `--drop-offending` and `--break-cycles` opt
 out of `FS` (see [plan/analyses.tsv](#plananalysestsv)). Check the `multiple births:` line pedsum prints.
 If pedsum warns that a set spans more than a day, the birth dates may be placeholders.
 
+If your register records multiple births, use its id instead: give the pedigree a column
+that holds the same value for everyone born in one delivery and is empty or `NA` for
+everyone else, run pedsum with `--multiple-birth-col <column>` in place of `--twin-max-days 1`,
+and name the column in the site file's `multiple_birth_column`. Don't mark non-twins with
+`.` or another token, and don't leave spaces around the ids: pedsum reads both correctly
+but writes them back as they are, and the kit then reads them differently (rwaples/pedsum#29).
+pedsum reports a set whose members are not all full siblings, or that has one member, as a
+finding in `pedsum/validate.log` and clears those cells, so review it before you use
+`validate.tsv.gz`: a cleared member counts as a single birth.
+
 ## Inputs
 
 All tables are tab-separated and include a header row. Missing values are `NA` or an
@@ -151,7 +161,11 @@ data_folder: /path/to/trait/files     # the trait files
 pedigree_path: /path/to/pedigree.tsv  # the pedigree; it need not be in data_folder
 study_end: 2021-12-31                 # end of register follow-up at this site
 threads: 4                            # optional, default 1
+# multiple_birth_column: delivery_id  # optional: the register's multiple-birth id
 ```
+
+Without `multiple_birth_column`, multiple births are full siblings born at most a day
+apart (step 0).
 
 ### Plan
 

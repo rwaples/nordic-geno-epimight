@@ -3,27 +3,45 @@
 # site's file, checks it and must find nothing, and the kit reads the copy pedsum writes.
 # The kit never parses the site's file itself and adds no pedigree checks of its own.
 
-# Full sibs born at most this many days apart form a multiple-birth set; 1 also catches
-# twins born either side of midnight.
+# Without the site's own multiple-birth column, full sibs born at most this many days apart
+# form a multiple-birth set; 1 also catches twins born either side of midnight.
 TWIN_MAX_DAYS <- 1L
+
+# Where the multiple-birth sets come from: the pedsum options that find them and the
+# description run.yaml records.
+multiple_birth_source <- function(column) {
+  if (is.null(column)) {
+    list(args = c("--twin-max-days", TWIN_MAX_DAYS),
+         description = sprintf("full sibs born at most %d day apart (pedsum --twin-max-days)",
+                               TWIN_MAX_DAYS))
+  } else {
+    list(args = c("--multiple-birth-col", shQuote(column)),
+         description = sprintf("the pedigree's %s column (pedsum --multiple-birth-col)", column))
+  }
+}
 
 # Runs pedsum validate on the site's pedigree file and reads back the pedigree it wrote
 # (validate.tsv.gz, every column as text). Returns list(pedigree, findings):
 # no findings when pedsum finds nothing, else one STOP, because any repair belongs in the
-# site's own pedsum run (step 0). The pedigree is NULL when pedsum wrote none.
-validate_pedigree <- function(path, dir, threads) {
+# site's own pedsum run (step 0). The pedigree is NULL when pedsum wrote none. pedsum finds
+# the multiple-birth sets from birth dates, or reads them from `multiple_birth_column`, the
+# register's own set id; either way the kit's pedigree has them as multiple_birth_set.
+validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   log <- file.path(dir, "pedsum.log")
   status <- system2(Sys.which("python"),
                     c("-I", "-m", "pedsum", "validate", "--in", shQuote(path),
                       "--out", shQuote(dir),
                       "--birth-year-col", "birth_year", "--birth-date-col", "birth_date",
-                      "--twin-max-days", TWIN_MAX_DAYS, "--threads", threads),
+                      multiple_birth_source(multiple_birth_column)$args, "--threads", threads),
                     stdout = log, stderr = log)
   written <- file.path(dir, "validate.tsv.gz")
   pedigree <- if (file.exists(written)) {
     data.table::fread(cmd = paste("gzip -dc", shQuote(written)), sep = "\t",
                       colClasses = "character", na.strings = "", showProgress = FALSE)
+  }
+  if (!is.null(pedigree) && !is.null(multiple_birth_column)) {
+    data.table::setnames(pedigree, multiple_birth_column, "multiple_birth_set")
   }
   list(pedigree = pedigree, findings = read_pedsum_findings(dir, status, path))
 }

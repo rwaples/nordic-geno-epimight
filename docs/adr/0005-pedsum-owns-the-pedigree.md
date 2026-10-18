@@ -28,7 +28,10 @@ pedigree needs a new check, the check goes into pedsum.
   file. Once pedsum has passed the file, every known parent has a row, so the kit reads
   a parent without a row as unknown, whatever token pedsum accepted for it.
 - pedsum finds multiple births. Full sibs born at most one day apart share a
-  `multiple_birth_set`. The cohort step leaves pairs from one set out of `FS` and keeps
+  `multiple_birth_set`. A site whose register records multiple births names that column
+  in its site file (`multiple_birth_column`); the check step then runs pedsum with
+  `--multiple-birth-col` in place of `--twin-max-days`, and pedsum checks that each set's
+  members are full sibs. The cohort step leaves pairs from one set out of `FS` and keeps
   both people as probands and as every other kind of relative. The sets are not passed
   to pedigreegraph as `twin` links, because a `twin` link means MZ co-twins and zygosity
   is unknown.

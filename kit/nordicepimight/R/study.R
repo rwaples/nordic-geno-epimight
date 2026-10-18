@@ -5,7 +5,7 @@
 # them; the trait files from the site's data folder.
 
 SITE_REQUIRED <- c("site", "plan", "data_folder", "pedigree_path", "study_end")
-SITE_DEFAULTS <- list(threads = 1L)
+SITE_DEFAULTS <- list(threads = 1L, multiple_birth_column = NULL)
 PLAN_REQUIRED <- c("traits", "analyses", "stratify")
 PLAN_DEFAULTS <- list(relative_windows = NULL, birth_year_bin = 1L, max_degree = 3L,
                       export_min_count = 5L)
@@ -135,6 +135,13 @@ read_study <- function(path) {
   if (!is.character(study$site) || length(study$site) != 1 || !nzchar(study$site)) {
     findings <- c(findings, list(finding("config_value_invalid", "site must be a name", path,
                                          format(study$site))))
+  }
+  births <- study$multiple_birth_column
+  if (!is.null(births) && (!is.character(births) || length(births) != 1 || !nzchar(births))) {
+    findings <- c(findings, list(finding("config_value_invalid",
+                                         "multiple_birth_column must be one column name", path,
+                                         format(births))))
+    study$multiple_birth_column <- NULL
   }
   defaults <- c(SITE_DEFAULTS, PLAN_DEFAULTS)
   for (key in names(LIMITS)) {
