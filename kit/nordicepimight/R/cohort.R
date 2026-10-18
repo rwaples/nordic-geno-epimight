@@ -19,6 +19,16 @@ relatives_window <- function(traits, relationships, windows) {
   grid[, .(trait, relationship, w)]
 }
 
+# Each relationship's pairs whose person is in the study population, by the relative's
+# birth decade: how many there are and how many of the relatives have no trait-file row,
+# so never count (#1).
+relatives_coverage <- function(pairs, population, pedigree) {
+  p <- pairs[person_id %chin% population]
+  p[, born := data.table::year(pedigree$birth_date[chmatch(relative_id, pedigree$id)])]
+  p[, .(pairs = .N, relative_no_trait_row = sum(!(relative_id %chin% population))),
+    keyby = .(relationship, relative_birth_decade = born %/% 10L * 10L)]
+}
+
 build_cohort <- function(inputs) {
   study <- inputs$study
   used <- unique(c(inputs$analyses$trait, inputs$analyses$relatives_trait))
@@ -61,7 +71,8 @@ build_cohort <- function(inputs) {
   setcolorder(cohort, c(COHORT_COLUMNS, study$stratify))
   setorderv(cohort, c("trait", "relatives_kind", "person_id"))
   rules_log <- rbindlist(lapply(built, `[[`, "log"))
-  list(cohort = cohort[], rules_log = rules_log)
+  list(cohort = cohort[], rules_log = rules_log,
+       coverage = relatives_coverage(pairs, inputs$population, pedigree))
 }
 
 # One row per trait, relationship and stratum: probands, their outcomes, and their
@@ -87,6 +98,8 @@ run_cohort <- function(study_path, out, dir) {
   empty <- setdiff(unique(c(inputs$analyses$trait, inputs$analyses$relatives_trait)),
                    unique(cohort$trait))
   fwrite(built$rules_log, file.path(dir, "rules.tsv"), sep = "\t")
+  fwrite(built$coverage, file.path(dir, "relatives_coverage.tsv"), sep = "\t", na = "NA",
+         quote = FALSE)
   if (length(empty) > 0) {
     findings <- finding("trait_no_probands", "no probands are left after the trait's rules",
                         examples = empty, count = length(empty))
@@ -100,5 +113,11 @@ run_cohort <- function(study_path, out, dir) {
   cat(sprintf("cohort: %d rows, %d traits x %d relationships; rules changed %d people\n",
               nrow(cohort), uniqueN(cohort$trait), uniqueN(cohort$relatives_kind),
               sum(built$rules_log$people)))
+  lost <- built$coverage[, .(pairs = sum(pairs), lost = sum(relative_no_trait_row)),
+                         by = relationship]
+  cat(sprintf("cohort: relatives with no trait row, by relationship: %s (by birth decade in %s)\n",
+              paste(sprintf("%s %d of %d", lost$relationship, lost$lost, lost$pairs),
+                    collapse = ", "),
+              file.path(dir, "relatives_coverage.tsv")))
   TRUE
 }

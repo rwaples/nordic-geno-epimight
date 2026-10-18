@@ -162,6 +162,12 @@ test_that("people with no trait-file row still link relatives (#1)", {
   expect_setequal(pairs[person_id == "c1", relative_id], c("p3", "gp1", "gp2"))
   expect_equal(of("Av")$relatives_n, rep(0L, 6))
   expect_equal(of("1G")$relatives_n, rep(0L, 6))
+  # relatives_coverage says so: each relationship's pairs and the relatives without a row.
+  coverage <- build_cohort(inputs)$coverage
+  expect_equal(coverage$relationship, c("1C", "1G", "Av"))
+  expect_equal(coverage$relative_birth_decade, c(1950L, 1900L, 1920L))
+  expect_equal(coverage$pairs, c(18L, 12L, 6L))
+  expect_equal(coverage$relative_no_trait_row, c(0L, 12L, 6L))
 })
 
 test_that("a trait with no probands left stops the cohort step", {

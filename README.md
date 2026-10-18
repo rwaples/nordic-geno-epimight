@@ -85,8 +85,8 @@ Start with the initial plan. For the complete one, change `plan:` in your site f
 | Step | Output | Does |
 |---|---|---|
 | `prepare` | your data folder | Your own scripts; the kit has no command for it (below) |
-| `check` | `out/1_check/` | Checks every input and lists each problem in `findings.tsv` |
-| `cohort` | `out/2_cohort/` | Applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
+| `check` | `out/1_check/` | Checks every input and lists each problem in `findings.tsv`; `pedigree_coverage.tsv` counts pedigree people with no trait row per birth decade |
+| `cohort` | `out/2_cohort/` | Applies the trait rules and counts each person's relatives, writing `cohort.tsv`; `relatives_coverage.tsv` counts the relatives with no trait row, who never count, per relationship and birth decade |
 | `epimight` | `out/3_epimight/` | Runs EPIMIGHT once for each estimate the analyses need |
 | `tables` | `out/*.tsv`, `out/run.yaml` | Writes the result tables |
 | `report` | `out/report.html` | Writes one page with every result and plot |

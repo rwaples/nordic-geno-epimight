@@ -1,6 +1,7 @@
 # Step 1, check: reads every input, runs every check whose inputs are usable, and writes
 # 1_check/findings.tsv, 1_check/run.yaml and, when nothing stops the run,
-# 1_check/inputs.rds, the parsed inputs the later steps read.
+# 1_check/inputs.rds, the parsed inputs the later steps read, and
+# 1_check/pedigree_coverage.tsv.
 
 # `validate` runs pedsum on the pedigree file; tests that are not about the pedigree pass a
 # stub that reads the file as pedsum would write it.
@@ -79,6 +80,16 @@ changed_inputs <- function(study_path, out) {
                                                       now[names(was)] != was])
 }
 
+# Pedigree people per birth decade: how many have a trait-file row (are in the study
+# population) and how many do not. Those without one can link relatives but never count
+# as one (#1).
+pedigree_coverage <- function(pedigree, population) {
+  in_population <- pedigree$id %chin% population
+  pedigree[, .(people = .N, trait_row = sum(in_population[.I]),
+               no_trait_row = sum(!in_population[.I])),
+           keyby = .(birth_decade = data.table::year(birth_date) %/% 10L * 10L)]
+}
+
 run_check <- function(study_path, out, dir) {
   result <- check_inputs(study_path, dir)
   findings <- result$findings
@@ -104,9 +115,14 @@ run_check <- function(study_path, out, dir) {
   }
   saveRDS(result$inputs, file.path(dir, "inputs.rds"))
   sets <- result$inputs$pedigree[!is.na(multiple_birth_set)]
+  coverage <- pedigree_coverage(result$inputs$pedigree, result$inputs$population)
+  fwrite(coverage, file.path(dir, "pedigree_coverage.tsv"), sep = "\t", na = "NA")
   cat(sprintf(paste("check: passed with %d warning(s); %d people in the study population;",
                     "%d multiple-birth sets of %d people\n"),
               sum(findings$severity == "WARN"), length(result$inputs$population),
               uniqueN(sets$multiple_birth_set), nrow(sets)))
+  cat(sprintf("check: %d of %d pedigree people have no trait row, by birth decade in %s\n",
+              sum(coverage$no_trait_row), sum(coverage$people),
+              file.path(dir, "pedigree_coverage.tsv")))
   TRUE
 }

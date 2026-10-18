@@ -437,3 +437,12 @@ test_that("pedsum's exit code is reported when it fails, with or without finding
   expect_match(killed$message, "failed \\(exit 3\\)")
   expect_equal(nrow(read_pedsum_findings(dir, 0L, "ped.tsv")), 1L)
 })
+
+test_that("pedigree coverage counts people with no trait row per birth decade (#1)", {
+  inputs <- check_fixture()$inputs
+  coverage <- pedigree_coverage(inputs$pedigree, inputs$population)
+  expect_equal(coverage$birth_decade, c(1900L, 1920L, 1950L))
+  expect_equal(coverage$people, c(2L, 4L, 6L))
+  expect_equal(coverage$trait_row, c(0L, 0L, 6L))
+  expect_equal(coverage$no_trait_row, c(2L, 4L, 0L))
+})
