@@ -141,6 +141,29 @@ test_that("only relatives with a trait-file row count", {
   expect_equal(nrow(cohort), 12L)
 })
 
+test_that("people with no trait-file row still link relatives (#1)", {
+  inputs <- check_fixture(function(s) {
+    rels <- c("1C", "Av", "1G")
+    s$analyses <- data.table(analysis_id = paste0("h2_t1_", rels), analysis = "h2",
+                             trait = "t1", relatives_trait = "t1", relationship = rels)
+    s
+  })$inputs
+  # The grandparents and parents that join the two sibships are in the pedigree only.
+  linkers <- c("gp1", "gp2", "p1", "p2", "p3", "p4")
+  expect_true(all(linkers %in% inputs$pedigree$id))
+  expect_false(any(linkers %in% inputs$population))
+  cohort <- build_cohort(inputs)$cohort[trait == "t1"]
+  of <- function(rel) cohort[relatives_kind == rel][order(person_id)]
+  # Every proband has three first cousins through them, and c1 and c4 are each the one case.
+  expect_equal(of("1C")$relatives_n, rep(3L, 6))
+  expect_equal(of("1C")$relatives_n_trait, rep(1L, 6))
+  # The aunts, uncles and grandparents are found but have no row, so none count.
+  pairs <- relative_pairs(inputs$pedigree, c("Av", "1G"))
+  expect_setequal(pairs[person_id == "c1", relative_id], c("p3", "gp1", "gp2"))
+  expect_equal(of("Av")$relatives_n, rep(0L, 6))
+  expect_equal(of("1G")$relatives_n, rep(0L, 6))
+})
+
 test_that("a trait with no probands left stops the cohort step", {
   path <- write_fixture(function(s) {
     s$traits[, min_followup := c("90", NA)]
