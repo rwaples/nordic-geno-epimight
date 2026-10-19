@@ -44,7 +44,7 @@ r-lintr = "*"
 python = "3.14.*"
 
 [pypi-dependencies]
-pedsum = { git = "https://github.com/rwaples/pedsum.git", rev = "33405c33995baa5c5d62a74c32dfb712e6c66b7e" }
+pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.15.0" }
 
 [tasks]
 setup = { cmd = "Rscript kit/setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }

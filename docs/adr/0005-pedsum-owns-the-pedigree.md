@@ -35,6 +35,10 @@ pedigree needs a new check, the check goes into pedsum.
   both people as probands and as every other kind of relative. The sets are not passed
   to pedigreegraph as `twin` links, because a `twin` link means MZ co-twins and zygosity
   is unknown.
+- The kit sets pedsum's limits on children per parent (`--max-children-mother 20
+  --max-children-father 50`, pedsum's suggestion for a human register; rwaples/pedsum#27).
+  pedsum leaves the check off by default, for animal pedigrees, and a code for an unknown
+  parent such as `9999` would otherwise become one founder with thousands of children.
 - The kit keeps the checks that need more than the pedigree. It checks the trait files
   against the pedigree (`trait_id_not_in_pedigree`, `date_before_birth`,
   `age_date_mismatch`, `birth_date_missing` and `stratum_na` for the study population),
@@ -49,10 +53,12 @@ pedigree needs a new check, the check goes into pedsum.
   stops the run instead of being replaced.
 - A pedigree without a `birth_year` column still has its parents' ages checked: pedsum's
   `birth_date_topology` compares the birth dates, to the day.
-- The kit needs a pedsum with `--twin-max-days` and `birth_date_topology`. The pin in
-  `pixi.toml` moves to the first pedsum release that has both.
+- The kit needs a pedsum with `--twin-max-days`, `birth_date_topology`,
+  `--max-children-mother`/`--max-children-father` and a numbered `multiple_birth_set`
+  under `--multiple-birth-col` (rwaples/pedsum#27, #29). `pixi.toml` pins pedsum v0.15.0,
+  the first release with all of them.
 - EPIMIGHT's sandwich SEs sum over every related pair up to `max_degree`, not over the
   analysis's relationship (`SandwichAnalysis-class.R:503` in epimight). Twins stay a
   dependent pair there, as they should, after they leave the `FS` counts.
-- Two review proposals now belong in pedsum. One is a check for a placeholder parent
-  code such as `9999`, which becomes a founder with thousands of children.
+- A review proposal, a check for a placeholder parent code such as `9999`, went into pedsum
+  as `parent_child_count` (rwaples/pedsum#27).

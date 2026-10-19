@@ -120,15 +120,19 @@ first:
 
 ```sh
 pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year \
-  --birth-date-col birth_date --twin-max-days 1
+  --birth-date-col birth_date --twin-max-days 1 \
+  --max-children-mother 20 --max-children-father 50
 gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
 ```
 
 Then point `pedigree_path` at `pedigree_validated.tsv`. pedsum adds a founder row, with no
 `birth_date`, for each parent without a row of its own. Check those parents in
-`pedsum/validate.log` first. A parent id with many children is probably a code for an
-unknown parent; rerun with `--missing-parent-token <code>`. If pedsum stops or finds
-something it doesn't repair, see its `--drop-offending` and `--break-cycles` options.
+`pedsum/validate.log` first. A `parent_child_count` finding names a mother with more than
+20 children or a father with more than 50: almost always a code for an unknown parent,
+such as `9999`. Delete that code's own row if it has one, then rerun with
+`--missing-parent-token <code>`. If pedsum stops or finds something it doesn't repair, see
+its `--drop-offending` and `--break-cycles` options; `--break-cycles` works from birth dates
+when there is no `birth_year` column.
 
 `--twin-max-days 1` makes full siblings born at most a day apart a multiple-birth set (the
 `multiple_birth_set` column). The kit finds the sets the same way and leaves their pairs
@@ -138,9 +142,8 @@ If pedsum warns that a set spans more than a day, the birth dates may be placeho
 If your register records multiple births, use its id instead: give the pedigree a column
 that holds the same value for everyone born in one delivery and is empty or `NA` for
 everyone else, run pedsum with `--multiple-birth-col <column>` in place of `--twin-max-days 1`,
-and name the column in the site file's `multiple_birth_column`. Don't mark non-twins with
-`.` or another token, and don't leave spaces around the ids: pedsum reads both correctly
-but writes them back as they are, and the kit then reads them differently (rwaples/pedsum#29).
+and name the column in the site file's `multiple_birth_column`. pedsum numbers the sets in
+its own `multiple_birth_set` column, which the kit reads.
 pedsum reports a set whose members are not all full siblings, or that has one member, as a
 finding in `pedsum/validate.log` and clears those cells, so review it before you use
 `validate.tsv.gz`: a cleared member counts as a single birth.

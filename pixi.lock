@@ -214,7 +214,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.99.0-h480d76f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.28-h4ee821c_9.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
-      - pypi: git+https://github.com/rwaples/pedsum.git?rev=33405c33995baa5c5d62a74c32dfb712e6c66b7e#33405c33995baa5c5d62a74c32dfb712e6c66b7e
+      - pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.15.0#2905a5cf545f4163da44c7f12a9209c38142e4e3
       - pypi: https://files.pythonhosted.org/packages/16/d5/928078d2b28f26829b138b4a6c3980045022fb409f570657a224ae60ef4e/numpy-2.5.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/28/de/0999a0ccb672570ef4da6f3caf8398d8cea201456156ec1c6e4947b9d315/pg_phenotype-0.3.0-cp313-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/3d/5f/2bd2fd4b99b0b5e76fea2f1fe149e05a7ec19a9a177758688bb82c7e3126/numba-0.68.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
@@ -3257,23 +3257,23 @@ packages:
   run_exports: {}
   size: 118849
   timestamp: 1784250406640
-- pypi: git+https://github.com/rwaples/pedsum.git?rev=33405c33995baa5c5d62a74c32dfb712e6c66b7e#33405c33995baa5c5d62a74c32dfb712e6c66b7e
+- pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.15.0#2905a5cf545f4163da44c7f12a9209c38142e4e3
   name: pedsum
-  version: 0.14.0
+  version: 0.15.0
   requires_dist:
   - numpy>=2.2,<3
   - scipy>=1.16.3,<2
   - polars>=1.43.2,<2
   - pyyaml>=6,<7
   - tqdm>=4.66,<5
-  - pedigree-graph>=0.12.1,<0.13
+  - pedigree-graph>=0.12.1,<0.14
   - numba>=0.68,<1
-  - pg-phenotype>=0.3,<0.4
+  - pg-phenotype>=0.3,<0.6
   - pytest>=9,<10 ; extra == 'test'
   - pytest-xdist>=3.8,<4 ; extra == 'test'
   - hypothesis>=6,<7 ; extra == 'test'
-  - ruff>=0.16,<0.17 ; extra == 'test'
-  - ty==0.0.84 ; extra == 'typecheck'
+  - ruff>=0.17,<0.18 ; extra == 'test'
+  - ty==0.0.89 ; extra == 'typecheck'
   requires_python: '>=3.14,<3.15'
 - pypi: https://files.pythonhosted.org/packages/16/d5/928078d2b28f26829b138b4a6c3980045022fb409f570657a224ae60ef4e/numpy-2.5.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
   name: numpy

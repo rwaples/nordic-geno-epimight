@@ -350,9 +350,35 @@ test_that("the site's own multiple-birth column replaces sets found from birth d
   expect_equal(codes(result, "STOP"), character())
   sets <- result$inputs$pedigree[!is.na(multiple_birth_set)]
   expect_setequal(sets$id, c("c4", "c5"))
-  expect_false("delivery" %in% names(result$inputs$pedigree))
   fs <- build_cohort(result$inputs)$cohort[trait == "t1" & relatives_kind == "FS"]
   expect_equal(fs[order(person_id), relatives_n], c(2L, 2L, 2L, 1L, 1L, 2L))
+})
+
+test_that("pedsum's own set numbers become multiple_birth_set, whatever the register wrote", {
+  result <- check_fixture(function(s) {
+    s$site$multiple_birth_column <- "delivery"
+    s$pedigree[, delivery := "."][id == "c4", delivery := "D7"][id == "c5", delivery := "D7 "]
+    s
+  }, pedsum = TRUE)
+  expect_equal(codes(result, "STOP"), character())
+  pedigree <- result$inputs$pedigree
+  expect_equal(sum(names(pedigree) == "multiple_birth_set"), 1L)
+  expect_setequal(pedigree[!is.na(multiple_birth_set), id], c("c4", "c5"))
+  expect_equal(uniqueN(pedigree[!is.na(multiple_birth_set), multiple_birth_set]), 1L)
+})
+
+# Step 0's pedsum run gives a code such as 9999 a founder row, so the kit sees it as a mother.
+test_that("a code for an unknown parent, with many children, stops the run", {
+  result <- check_fixture(function(s) {
+    code <- data.table(id = "9999", mother = NA_character_, father = NA_character_, sex = 2,
+                       birth_date = NA_character_)
+    kids <- data.table(id = paste0("k", 1:21), mother = "9999", father = NA_character_,
+                       sex = 1, birth_date = sprintf("1960-01-%02d", 1:21))
+    s$pedigree <- rbind(s$pedigree, code, kids)
+    s
+  }, pedsum = TRUE)
+  expect_contains(codes(result, "STOP"), "pedigree_invalid")
+  expect_match(result$findings[code == "pedigree_invalid", message], "parent_child_count")
 })
 
 test_that("a pedigree path with a space reaches pedsum whole", {

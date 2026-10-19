@@ -7,6 +7,11 @@
 # form a multiple-birth set; 1 also catches twins born either side of midnight.
 TWIN_MAX_DAYS <- 1L
 
+# A mother or father with more children than this is a pedsum finding: almost always a code
+# for an unknown parent, such as 9999, rather than a person (pedsum's suggested limits for a
+# human register).
+MAX_CHILDREN <- c(mother = 20L, father = 50L)
+
 # Where the multiple-birth sets come from: the pedsum options that find them and the
 # description run.yaml records.
 multiple_birth_source <- function(column) {
@@ -25,7 +30,7 @@ multiple_birth_source <- function(column) {
 # no findings when pedsum finds nothing, else one STOP, because any repair belongs in the
 # site's own pedsum run (step 0). The pedigree is NULL when pedsum wrote none. pedsum finds
 # the multiple-birth sets from birth dates, or reads them from `multiple_birth_column`, the
-# register's own set id; either way the kit's pedigree has them as multiple_birth_set.
+# register's own set id; either way pedsum writes them, numbered, as multiple_birth_set.
 validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) {
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   log <- file.path(dir, "pedsum.log")
@@ -33,15 +38,14 @@ validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) 
                     c("-I", "-m", "pedsum", "validate", "--in", shQuote(path),
                       "--out", shQuote(dir),
                       "--birth-year-col", "birth_year", "--birth-date-col", "birth_date",
+                      "--max-children-mother", MAX_CHILDREN[["mother"]],
+                      "--max-children-father", MAX_CHILDREN[["father"]],
                       multiple_birth_source(multiple_birth_column)$args, "--threads", threads),
                     stdout = log, stderr = log)
   written <- file.path(dir, "validate.tsv.gz")
   pedigree <- if (file.exists(written)) {
     data.table::fread(cmd = paste("gzip -dc", shQuote(written)), sep = "\t",
                       colClasses = "character", na.strings = "", showProgress = FALSE)
-  }
-  if (!is.null(pedigree) && !is.null(multiple_birth_column)) {
-    data.table::setnames(pedigree, multiple_birth_column, "multiple_birth_set")
   }
   list(pedigree = pedigree, findings = read_pedsum_findings(dir, status, path))
 }
