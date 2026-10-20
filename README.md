@@ -100,16 +100,25 @@ data folder, one file per trait in `plan/traits.tsv`, named as its `file` column
 formats are under [Inputs](#inputs). Trait definitions, including ICD codes, are in
 `Definitions/Phenotype_list.tsv`.
 
-See the statistical analysis plan (`docs/SAP_Scandinavian_Genealogy.md`) for a list of considerations when preparing this data.
+See the statistical analysis plan (`docs/SAP_Scandinavian_Genealogy.md`, version 8) for
+the rules when preparing this data. The kit can't check these:
 
-A partial list:
-- Remove known legal but not biological pedigree links:
-  - Adoption
-  - Same-sex parents: keep the birth mother if identified
-- Disregard major depressive disorder (MDD), bipolar disorder (BD), and schizophrenia (SCZ) diagnoses before age 10.
+- Keep adoptive links: links between adoptees and their adoptive parents stay in the
+  pedigree (SAP 4.1).
+- Same-sex parents: with two mothers registered, set the father ID to `-1`; with two
+  fathers, set the mother ID to `-1` (SAP 4.1).
+- Causes of death count as diagnoses. For CVD, combine the patient registers and the
+  cause of death register: the first record in either sets onset, and a CVD death is
+  status 1, not a competing event (SAP 5.1).
+- Disregard major depressive disorder (MDD), bipolar disorder (BD) and schizophrenia
+  (SCZ) diagnoses before age 10, and autism spectrum disorder (ASD) diagnoses before
+  age 4. Someone whose only diagnosis was before the limit is censored (0), or 2 if they
+  died (SAP 5.2).
 - Main vs auxiliary (secondary) diagnoses (open question 9).
 - Birth location and civil register - any special handling that is necessary.
-- For making the analysis windows (W1 - W4) implement appropriate filters on diagnosis time. Do not filter by birth year here; that will happen in step 2.
+- For the analysis windows (W1 to W3), filter on diagnosis time: W3 counts only
+  diagnoses made 2008 to 2021, in ICD-10. Do not filter by birth year here; that will
+  happen in step 2.
 
 Last, repair the pedigree with pedsum. pedsum owns the pedigree (ADR 0005): the kit
 never changes it and has no pedigree checks of its own. Its check step runs `pedsum
@@ -285,7 +294,8 @@ A relative counts only if they have a row in the trait file. PO, Av and 1G follo
 pedigree, not birth order: an uncle younger than his nephew is still his uncle.
 
 Twins, triplets and other members of one multiple-birth set (step 0) are not each other's
-`FS` relatives, as the SAP says (4.1), whatever their sex. They stay probands, and each
+`FS` relatives, whatever their sex. SAP version 8 (4.1) keeps sex-discordant twin pairs
+as full siblings; the kit doesn't yet (`docs/SAP_kit_gaps.md`). They stay probands, and each
 stays every other kind of relative: a twin's children are still the co-twin's nieces and
 nephews. Zygosity is unknown, so the kit doesn't count any pair as MZ. The sandwich SEs
 still treat the twins as a related pair.
@@ -341,6 +351,6 @@ one.
   toy site, expected results and the scripts that build them. `pixi run test` and
   `pixi run lint` check the package.
 - `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
-- `docs/`: the glossary, design decisions (`adr/`), open questions, the collaborators'
-  guide and statistical analysis plan (SAP), and where the kit falls short of the SAP
-  (`SAP_kit_gaps.md`).
+- `docs/`: the glossary, design decisions (`adr/`), open questions, the statistical
+  analysis plan (SAP, `SAP_Scandinavian_Genealogy.md` and its source docx), and where
+  the kit falls short of the SAP (`SAP_kit_gaps.md`).
