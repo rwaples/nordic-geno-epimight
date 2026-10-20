@@ -1,0 +1,9 @@
+.pixi/
+.Rhistory
+.Rproj.user/
+.DS_Store
+out/
+selftest-out/
+local/*
+!local/example.yaml
+.~lock.*#

@@ -1,0 +1,60 @@
+# nordic-geno-epimight: checks a study's pedigree and trait files, builds EPIMIGHT's
+# cohort table, runs EPIMIGHT with pedigree-pair sandwich SEs, and writes and plots
+# the results.
+#
+# Everything comes from conda-forge except three pinned GitHub sources: pedsum (Python,
+# below) and the R packages epimight and pedigreegraph, which `pixi run setup` builds
+# into this environment (kit/nordicepimight/inst/pins.yaml holds their pins).
+[workspace]
+name = "nordic-geno-epimight"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+requires-pixi = ">=0.82,<0.83"
+
+[dependencies]
+r-base = "4.5.*"
+# epimight 2.2.0's Imports (its DESCRIPTION), less parallel (base R) and pedigreegraph.
+r-r6 = "*"
+r-cmprsk = "*"
+"r-data.table" = "*"
+r-dplyr = "*"
+r-dtplyr = "*"
+r-jinjar = "*"
+r-readr = "*"
+r-tidyr = "*"
+r-yaml = "*"
+r-rjson = "*"
+r-stringr = "*"
+# pedigreegraph 0.12.2's Imports, and the Rust toolchain it compiles with (rustc >= 1.85).
+r-matrix = "*"
+rust = ">=1.85"
+c-compiler = "*"
+cxx-compiler = "*"
+make = "*"
+r-remotes = "*"
+# The kit's own package, its report and its tests.
+r-jsonlite = "*"
+r-ggplot2 = "*"
+r-rmarkdown = "*"
+r-knitr = "*"
+pandoc = "*"
+r-testthat = "*"
+r-lintr = "*"
+# pedsum checks the pedigree.
+python = "3.14.*"
+
+[pypi-dependencies]
+pedsum = { git = "https://github.com/rwaples/pedsum.git", rev = "33405c33995baa5c5d62a74c32dfb712e6c66b7e" }
+
+[tasks]
+setup = { cmd = "Rscript kit/setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }
+check = { cmd = "Rscript -e 'nordicepimight::main(\"check\")'", description = "Step 1: check the inputs (pixi run check SITE.yaml OUT/)" }
+cohort = { cmd = "Rscript -e 'nordicepimight::main(\"cohort\")'", description = "Step 2: build the cohort table" }
+epimight = { cmd = "Rscript -e 'nordicepimight::main(\"epimight\")'", description = "Step 3: run EPIMIGHT" }
+tables = { cmd = "Rscript -e 'nordicepimight::main(\"tables\")'", description = "Step 4: write the output tables" }
+report = { cmd = "Rscript -e 'nordicepimight::main(\"report\")'", description = "Step 5: render the HTML report" }
+export = { cmd = "Rscript -e 'nordicepimight::main(\"export\")'", description = "Step 6: write the folder to share, with small counts suppressed" }
+study = { cmd = "Rscript -e 'nordicepimight::main(\"study\")'", description = "Steps 1-6 in order (pixi run study SITE.yaml OUT/)" }
+selftest = { cmd = "Rscript -e 'nordicepimight::main(\"selftest\")'", description = "The kit on its toy study, against independent values (pixi run selftest OUT/)" }
+test = { cmd = "Rscript -e 'testthat::test_local(\"kit/nordicepimight\", stop_on_failure = TRUE)'", description = "Unit tests" }
+lint = { cmd = "Rscript -e 'l <- c(lintr::lint_package(\"kit/nordicepimight\"), lintr::lint(\"kit/setup.R\"), lintr::lint_dir(\"kit/selftest/build\")); print(l); quit(status = length(l) > 0)'", description = "Lint the package and scripts" }

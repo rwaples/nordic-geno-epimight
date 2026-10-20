@@ -1,0 +1,14 @@
+trait	type	file	min_followup	max_followup	max_followup_relatives	trait2	exclude_trait2	trait2_window	trait2_window_type	trait2_action	filter_relatives
+plain	tte	trait1.tsv									
+max20	tte	trait1.tsv		20							
+max20_relatives_none	tte	trait1.tsv		20	none						
+max30_relatives50	tte	trait1.tsv		30	50						
+min70	tte	trait1.tsv	70								
+exclude_before	tte	trait1.tsv				other	before				
+exclude_after_within5	tte	trait1.tsv				other	after	5	within		
+exclude_any_atleast10	tte	trait1.tsv				other	any	10	at_least		
+competing_before	tte	trait1.tsv				other	before			competing	
+competing_before_max40	tte	trait1.tsv		40		other	before			competing	
+filtered_max20_exclude_before	tte	trait1.tsv		20		other	before				TRUE
+max70	tte	trait1.tsv		70							
+other	tte	trait2.tsv									

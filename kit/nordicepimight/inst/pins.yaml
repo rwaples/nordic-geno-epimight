@@ -1,0 +1,13 @@
+# The GitHub sources `pixi run setup` builds. A run records what is installed and stops
+# if it differs from these (ADR 0002). Moving a pin means rerunning setup and the self-test.
+epimight:
+  repo: BioPsyk/epimight
+  branch: sandwich
+  commit: 55803e1f1e61e0919d0d67339734e9ca7a2ffe9c
+  version: 2.2.0
+pedigreegraph:
+  repo: rwaples/pedigree-graph
+  tag: v0.12.2
+  commit: ce93d5a5f3152d4d7c620eaf490489f19c9679c1
+  subdir: r
+  version: 0.12.2

@@ -1,0 +1,6 @@
+# The toy study's plan: h2 for both traits and rg in both directions, for PO, FS and HS.
+traits: traits.tsv
+analyses: analyses.tsv
+stratify: [birth_year]
+birth_year_bin: 25
+max_degree: 3

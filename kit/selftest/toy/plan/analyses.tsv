@@ -1,0 +1,13 @@
+analysis_id	analysis	trait	relatives_trait	relationship
+h2_trait1_PO	h2	trait1	trait1	PO
+h2_trait2_PO	h2	trait2	trait2	PO
+h2_trait1_FS	h2	trait1	trait1	FS
+h2_trait2_FS	h2	trait2	trait2	FS
+h2_trait1_HS	h2	trait1	trait1	HS
+h2_trait2_HS	h2	trait2	trait2	HS
+rg_trait1_trait2_PO	rg	trait1	trait2	PO
+rg_trait2_trait1_PO	rg	trait2	trait1	PO
+rg_trait1_trait2_FS	rg	trait1	trait2	FS
+rg_trait2_trait1_FS	rg	trait2	trait1	FS
+rg_trait1_trait2_HS	rg	trait1	trait2	HS
+rg_trait2_trait1_HS	rg	trait2	trait1	HS
