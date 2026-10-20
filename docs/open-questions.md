@@ -2,7 +2,7 @@
 
 Questions 1 to 5 are about choices in the kit and the shared plan; the answers may change
 them. Questions 6 to 8 ask how to read the SAP's W2 window
-(`Firstpass_SAP_Scandinavian_Genealogy.txt`, sections 4.2 and 6.3). The kit needs the
+(`SAP_Scandinavian_Genealogy.md`, sections 4.2 and 6.3). The kit needs the
 answers before it can support that window. Question 9 is about how sites build the
 trait files.
 

@@ -1,7 +1,7 @@
 # Where the kit falls short of the SAP
 
 This compares the kit with the first-pass statistical analysis plan,
-`Firstpass_SAP_Scandinavian_Genealogy.txt`. Section numbers refer to the SAP.
+`SAP_Scandinavian_Genealogy.md`. Section numbers refer to the SAP.
 
 The two agree on the core: pedsum validates the pedigree, the trait rules follow
 `make_epimight_tte`, EPIMIGHT estimates h² and rg per birth-year stratum and pools them,

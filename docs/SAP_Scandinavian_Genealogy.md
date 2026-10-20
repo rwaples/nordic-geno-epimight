@@ -4,29 +4,25 @@ Scandinavian genealogy: heritability and genetic correlation of mental and cardi
 
 *Version 8, 20 October 2026. Coordinating centre: Institute of Biological Psychiatry, Roskilde*
 
-1\. Aim and set-up
+<!-- Converted from SAP_Scandinavian_Genealogy_v8.docx. The docx is the source; edit it, then convert again. -->
+
+## 1. Aim and set-up
 
 We estimate heritability (h2) and genetic correlation (rg) of mental and cardiometabolic disorders (CMD) in Denmark, Sweden and Norway using national genealogies, and compare the countries. Earlier work covered Denmark and Sweden only and read estimates off each country's own register coverage (Meijsen et al., Nat Commun 2024 and 2025). Here every country runs the same analyses with the same software, in three analysis windows that make the countries comparable step by step.
 
 - Each country runs the analyses on its own server and returns only aggregate, disclosure-checked tables. No individual-level data leave a country.
-
 - Fixed software for all countries: pedsum (genealogy), the shared make_epimight_tte rules (EPIMIGHT input, implemented in the nordic-geno-epimight kit) and EPIMIGHT (h2, rg), each at one agreed version.
-
 - Every analysis is run in three windows: W1 (all available data), W2 (a birth cohort shared by all three countries) and W3 (a birth cohort and diagnosis period shared by all three countries).
 
-2\. Objectives
+## 2. Objectives
 
-1.  **O1. Genealogy.** Describe each national genealogy (size, depth, completeness, relative pairs) with pedsum.
+1. **O1. Genealogy.** Describe each national genealogy (size, depth, completeness, relative pairs) with pedsum.
+2. **O2. Descriptive statistics.** Incidence and prevalence of every phenotype by sex, age and period.
+3. **O3. Heritability.** Liability-scale h2 per phenotype and country, from full siblings (main) and five other relationship types.
+4. **O4. Genetic correlation.** rg for mental x mental, mental x CVD and CVD x CVD pairs.
+5. **O5. Comparison.** Meta-analysis across countries and between-country heterogeneity, W1 versus W2 and W3.
 
-2.  **O2. Descriptive statistics.** Incidence and prevalence of every phenotype by sex, age and period.
-
-3.  **O3. Heritability.** Liability-scale h2 per phenotype and country, from full siblings (main) and five other relationship types.
-
-4.  **O4. Genetic correlation.** rg for mental x mental, mental x CVD and CVD x CVD pairs.
-
-5.  **O5. Comparison.** Meta-analysis across countries and between-country heterogeneity, W1 versus W2 and W3.
-
-3\. Data sources
+## 3. Data sources
 
 | Item                            | Denmark                                                | Sweden                                              | Norway                                          |
 |---------------------------------|--------------------------------------------------------|-----------------------------------------------------|-------------------------------------------------|
@@ -45,23 +41,18 @@ We estimate heritability (h2) and genetic correlation (rg) of mental and cardiom
 
 *Table 1. Register coverage. Norway sets the overlap: diagnoses from 2008, follow-up to 2021, parent links from 1960.*
 
-4\. Study population and analysis windows
+## 4. Study population and analysis windows
 
-4.1 Genealogy and inclusion
+### 4.1 Genealogy and inclusion
 
 - Genealogy: everyone in the civil register with a valid birth date and sex, and all their recorded parents.
-
 - **Adoptions.** Links between adoptees and their adoptive parents are kept. Norway has no adoption information and the Danish adoption register only covers a short period, so removing these links would make the countries less comparable.
-
 - **Same-sex parents.** With two mothers registered, the father ID is set to missing (-1). With two fathers registered, the mother ID is set to missing (-1).
-
 - **Twins.** Twins are identified and are no longer counted as full siblings. Sex-discordant twin pairs are kept, as they are known to be fraternal. Sex-concordant twin pairs are left out, as identical and fraternal pairs cannot be told apart.
-
 - Index persons must be born in the country (EPIMIGHT analyses). People born abroad still appear as relatives.
-
 - Status: 1 = diagnosis, 2 = death from another cause (competing risk), 0 = censored (emigration or end of follow-up).
 
-4.2 The three windows
+### 4.2 The three windows
 
 |                   | W1: All available data                                  | W2: Common birth cohort                                             | W3: Common birth cohort and diagnosis period                                          |
 |-------------------|---------------------------------------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------------------|
@@ -84,7 +75,7 @@ We estimate heritability (h2) and genetic correlation (rg) of mental and cardiom
 
 **Cardiometabolic traits.** W3 index persons are too young for most CMD. CMD in W3 is estimated in the parent generation of the W3 index persons, using their siblings and parents as relatives.
 
-5\. Phenotypes
+## 5. Phenotypes
 
 Phenotypes follow the shared mapping ICD_codes_Mental_CVD v.14.6.2026.xlsx. The diagnostic codes used per country and disorder are being reviewed (Øyvind) and will be presented at the next meeting.
 
@@ -95,25 +86,20 @@ Phenotypes follow the shared mapping ICD_codes_Mental_CVD v.14.6.2026.xlsx. The 
 
 *Table 3. Phenotypes.*
 
-5.1 Sources of a diagnosis
+### 5.1 Sources of a diagnosis
 
 - Any inpatient or outpatient hospital contact with the code as primary or secondary diagnosis.
-
 - **Cause of death.** Unlike earlier work, causes of death also count as diagnoses. This matters most for CVD.
-
 - **CVD.** The patient registers and the cause of death register are combined to decide whether and when a CVD event happened. The first record in either source defines onset. A death from CVD is therefore a CVD event (status 1), not a competing event.
-
 - W3 uses ICD-10 only. W1 and W2 also use ICD-8 and ICD-9 in Denmark and Sweden.
 
-5.2 Time to diagnosis
+### 5.2 Time to diagnosis
 
 - **MDD, BD and SCZ.** Diagnoses before age 10 are ignored. The first diagnosis from age 10 onwards defines case status and time to event.
-
 - **ASD.** Diagnoses before age 4 are ignored. The first diagnosis from age 4 onwards defines case status and time to event.
-
 - Someone whose only diagnosis was before that age limit is coded as censored (0) with time to event at emigration or end of follow-up. If they died, they are coded as 2 with time to event at death.
 
-5.3 Diagnoses that cannot both apply
+### 5.3 Diagnoses that cannot both apply
 
 | Combination | Rule                                                                                                                                                                                                                               |
 |-------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -123,7 +109,7 @@ Phenotypes follow the shared mapping ICD_codes_Mental_CVD v.14.6.2026.xlsx. The 
 
 *Table 4. Hierarchy between mental disorders. Implemented with the trait2 options of make_epimight_tte (exclude_trait2 = "any", trait2_action = "exclude").*
 
-6\. Analyses
+## 6. Analyses
 
 | Step | What                                     | Tool                                      | Windows                             | Returned                                          |
 |------|------------------------------------------|-------------------------------------------|-------------------------------------|---------------------------------------------------|
@@ -137,43 +123,36 @@ Phenotypes follow the shared mapping ICD_codes_Mental_CVD v.14.6.2026.xlsx. The 
 
 *Table 5. Overview of analyses. Steps 1 to 6 are run in each country.*
 
-6.1 Genealogy (Steps 1 and 2)
+### 6.1 Genealogy (Steps 1 and 2)
 
 Each country builds one pedigree file (id, sex, mother, father, birth year; **-1** for a missing parent or information), applies the rules in Section 4.1, validates it with pedsum, and summarises it for the full pedigree and for the W2 and W3 cohorts with their relatives. The summaries give Table 1 and Figure 1 of the paper.
 
-Return the summary as: {country}\_Genealogysummary\_{window}.tsv
+Return the summary as: `{country}_Genealogysummary_{window}.tsv`
 
-6.2 Descriptive statistics (Step 3)
+### 6.2 Descriptive statistics (Step 3)
 
 For each phenotype, countries report incidence and prevalence in three groups:
 
-1.  **The whole population** of each country.
-
-2.  **The W2 cohort** (born 1960 to 2007).
-
-3.  **The W3 cohort** (born 1985 to 2005).
+1. **The whole population** of each country.
+2. **The W2 cohort** (born 1960 to 2007).
+3. **The W3 cohort** (born 1985 to 2005).
 
 All are reported by sex (all, men, women), by age and calendar year.
 
 - **Incidence:** countries return the number of new cases per birth year by age at diagnosis. Each individual is counted once.
-
 - **Incidence:** countries return the number of new cases per year of diagnosis by age at diagnosis. Each individual is counted once.
-
 - **Prevalence:** the share of people alive and living in the country on 1 January of each year who have ever had the diagnosis (since 2008 for the W3 cohort). Countries return the number of people with the diagnosis and the number of people in the population.
 
-Return results as: {country}\_lexisData_Incidence_YOB\_{window}.tsv and {country}\_lexisData_Incidence_YODx\_{window}.tsv
+Return results as: `{country}_lexisData_Incidence_YOB_{window}.tsv` and `{country}_lexisData_Incidence_YODx_{window}.tsv`
 
-6.3 EPIMIGHT input (Step 4)
+### 6.3 EPIMIGHT input (Step 4)
 
 - The input is built for one trait and one relationship per call, following make_epimight_tte. The kit applies the same rules in its cohort step.
-
 - The window is applied to the phenotype table before the call. W2: no date filter on diagnoses, follow-up to the end of each country's data. W3: only diagnoses made 2008 to 2021 count and everyone is censored at 31 December 2021. Relatives' status comes from the same table, so the window applies to them too.
-
 - The function is run on everyone, and the output is then restricted to the probands of the window (born 1960 to 2007 in W2, 1985 to 2005 in W3, 1985 to 2015 in the W3 ASD sensitivity analysis), so that older relatives are still counted.
-
 - The hierarchy rules in Section 5.3 are applied with the trait2 options.
 
-6.4 Heritability (Step 5)
+### 6.4 Heritability (Step 5)
 
 Liability-scale h2 from the population risk (K) and the risk in persons with an affected relative (KR), per relationship type.
 
@@ -190,9 +169,9 @@ Liability-scale h2 from the population risk (K) and the risk in persons with an 
 
 **Strata.** All estimates are calculated per birth year, per 5-year birth cohort and per 10-year birth cohort. The estimates are meta-analysed within each grouping: all single-year estimates together, all 5-year estimates together and all 10-year estimates together. There is no meta-analysis across the three groupings.
 
-Return the results as: {country}\_h2\_{phenotype}\_{familyType}\_{window}.tsv. Each file includes the per-stratum and the meta-analysed h2 for each grouping.
+Return the results as: `{country}_h2_{phenotype}_{familyType}_{window}.tsv`. Each file includes the per-stratum and the meta-analysed h2 for each grouping.
 
-6.5 Genetic correlation (Step 6)
+### 6.5 Genetic correlation (Step 6)
 
 rg from the cross-trait familial risk (trait 2 in relatives of persons with trait 1), run in both directions and combined.
 
@@ -206,25 +185,21 @@ rg from the cross-trait familial risk (trait 2 in relatives of persons with trai
 
 **Additional.** rg can also be compared across relationships, for example the MD x psychiatric rg from parent-offspring pairs versus avuncular pairs.
 
-Strata and meta-analysis follow Section 6.4. Return the results as: {country}\_rg\_{phenotype1_phenotype2}\_{familyType}\_{window}.tsv
+Strata and meta-analysis follow Section 6.4. Return the results as: `{country}_rg_{phenotype1_phenotype2}_{familyType}_{window}.tsv`
 
-6.6 Meta-analysis and heterogeneity (Step 7)
+### 6.6 Meta-analysis and heterogeneity (Step 7)
 
 - Within each country: random-effects meta-analysis across strata, separately for the 1-, 5- and 10-year groupings.
-
 - Across countries: random-effects meta-analysis, Cochran Q and I2, pairwise country differences.
-
 - A difference between countries is checked in W3, where all three countries count diagnoses over the same years. A difference seen in W1 or W2 but not in W3 is reported as a possible effect of register coverage.
 
-7\. Sensitivity analyses
+## 7. Sensitivity analyses
 
 - W1 versus W2 versus W3.
-
 - W3 with the birth cohort extended to 2015, for ASD.
-
 - h2 and rg compared across relationship types (for example parent-offspring versus avuncular).
 
-8\. Disclosure and outputs
+## 8. Disclosure and outputs
 
 - No cell below the national minimum (5 in Denmark and Norway, 11 in Sweden) is exported; small cells are merged across adjacent birth years.
 

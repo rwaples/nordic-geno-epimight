@@ -100,7 +100,7 @@ data folder, one file per trait in `plan/traits.tsv`, named as its `file` column
 formats are under [Inputs](#inputs). Trait definitions, including ICD codes, are in
 `Definitions/Phenotype_list.tsv`.
 
-See the statistical analysis plan (`docs/Firstpass_SAP_Scandinavian_Genealogy.txt`) for a list of considerations when preparing this data.
+See the statistical analysis plan (`docs/SAP_Scandinavian_Genealogy.md`) for a list of considerations when preparing this data.
 
 A partial list:
 - Remove known legal but not biological pedigree links:
