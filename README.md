@@ -100,25 +100,11 @@ data folder, one file per trait in `plan/traits.tsv`, named as its `file` column
 formats are under [Inputs](#inputs). Trait definitions, including ICD codes, are in
 `Definitions/Phenotype_list.tsv`.
 
-See the statistical analysis plan (`docs/SAP_Scandinavian_Genealogy.md`, version 8) for
-the rules when preparing this data. The kit can't check these:
-
-- Keep adoptive links: links between adoptees and their adoptive parents stay in the
-  pedigree (SAP 4.1).
-- Same-sex parents: with two mothers registered, set the father ID to `-1`; with two
-  fathers, set the mother ID to `-1` (SAP 4.1).
-- Causes of death count as diagnoses. For CVD, combine the patient registers and the
-  cause of death register: the first record in either sets onset, and a CVD death is
-  status 1, not a competing event (SAP 5.1).
-- Disregard major depressive disorder (MDD), bipolar disorder (BD) and schizophrenia
-  (SCZ) diagnoses before age 10, and autism spectrum disorder (ASD) diagnoses before
-  age 4. Someone whose only diagnosis was before the limit is censored (0), or 2 if they
-  died (SAP 5.2).
-- Main vs auxiliary (secondary) diagnoses (open question 9).
-- Birth location and civil register - any special handling that is necessary.
-- For the analysis windows (W1 to W3), filter on diagnosis time: W3 counts only
-  diagnoses made 2008 to 2021, in ICD-10. Do not filter by birth year here; that will
-  happen in step 2.
+**[docs/step-0.md](docs/step-0.md) is the full guide:** the formats every file must
+meet, and the rules from the statistical analysis plan (SAP version 8) to apply on the
+way, such as which diagnoses count, age limits, cause of death, adoptions, same-sex
+parents and the analysis windows. The kit can't check those rules; it only checks the
+formats.
 
 Last, repair the pedigree with pedsum. pedsum owns the pedigree (ADR 0005): the kit
 never changes it and has no pedigree checks of its own. Its check step runs `pedsum
@@ -352,5 +338,6 @@ one.
   `pixi run lint` check the package.
 - `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
 - `docs/`: the glossary, design decisions (`adr/`), open questions, the statistical
-  analysis plan (SAP, `SAP_Scandinavian_Genealogy.md` and its source docx), and where
-  the kit falls short of the SAP (`SAP_kit_gaps.md`).
+  analysis plan (SAP, `SAP_Scandinavian_Genealogy.md` and its source docx), the data
+  preparation guide (`step-0.md`), and where the kit falls short of the SAP
+  (`SAP_kit_gaps.md`).
