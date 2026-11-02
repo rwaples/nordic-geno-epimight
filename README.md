@@ -203,10 +203,11 @@ row for each person in the study population.
 
 | Column | Meaning |
 |---|---|
+| `id` | Person id, the same as in the pedigree. Read as text: `001`, `1` and `1.0` are three people |
+| `trait` | One value for the whole file. The kit records it but doesn't use it |
 | `status` | 1 has the trait, 2 had a competing event such as death, 0 censored |
 | `status_date` | Date of the status: onset, competing event or end of follow-up |
 | `code` | Optional. ICD code of the first diagnosis for cases, `NA` for everyone else. The kit checks it but doesn't use it |
-| `trait` | One value for the whole file. The kit records it but doesn't use it |
 
 The kit computes each age as `(status_date - birth_date) / 365.25`, from the pedigree's
 `birth_date`. EPIMIGHT uses whole years. Other columns are allowed and ignored, so check
