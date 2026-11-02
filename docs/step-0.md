@@ -71,8 +71,9 @@ other relatives. **[SAP 4.1]**
   `9999`, with a missing value, or let pedsum do it (1.4). **[kit]**
 - **Twins.** If your register records multiple births, put them in the `multiple_birth_id` column
   and set `multiple_birth_column: multiple_birth_id` in your site file. **[recommended]**
-  In addition, the EPIMIGHT analysis excludes same-sex full siblings born within one month
-  of each other from FS, as possible MZ twins. Don't remove twins from the pedigree.
+  The kit leaves same-sex pairs from one multiple birth, and pairs with an unknown sex,
+  out of FS as possible MZ twins. Boy-girl pairs stay full siblings. **[SAP 4.1]**
+  Don't remove twins from the pedigree.
   **[kit]** Twins stay probands and every other kind of relative: a twin's children are
   still the co-twin's nieces and nephews.
 
@@ -314,7 +315,7 @@ Follow the current rule and note what you did.
 |---|---|---|
 | Probands born in the country only **[SAP 4.1]** | Keep people born abroad, count them, fill `birth_place` | issue #12 |
 | Proband birth ranges for W2 and W3 | Run W1 only | `SAP_kit_gaps.md` |
-| Twins: SAP keeps boy-girl pairs as full siblings **[SAP 4.1]**; the kit drops every pair | Nothing to do | `SAP_kit_gaps.md`, open question 5 |
+| Twins: out of FS only, or out of every relationship? Triplets judged pair by pair? | Nothing to do; the kit assumes FS only, pair by pair | Open question 5 |
 | Main diagnoses only, or secondary too | Count both | Open question 9 |
 | Underlying cause of death only, or contributing too | Note which you used | Not raised yet |
 | W3: people who died or emigrated before 2008, relatives outside the window | Wait | Open questions 6 and 7 |

@@ -47,10 +47,11 @@ a trait file holds one row per person.
 
 ## What else the kit can't do yet
 
-1. **Twins (4.1).** The SAP keeps sex-discordant twin pairs as full siblings and leaves
-   out sex-concordant pairs. The kit leaves every pair from one multiple-birth set out
-   of `FS`, whatever their sex (`kit/nordicepimight/R/relationships.R:45`, ADR 0005).
-   It needs a sex test on the pair (open question 5).
+1. **Twins (4.1).** The kit now keeps sex-discordant pairs from one multiple-birth set
+   as full siblings and leaves out same-sex pairs and pairs with an unknown sex
+   (`kit/nordicepimight/R/relationships.R`). Two details are unconfirmed (open question
+   5): the kit leaves such pairs out of `FS` only, and judges each pair in a set of three
+   or more by its own sexes.
 
 2. **Probands born in the country (4.1).** People born abroad count as relatives but
    not as probands. The kit has no rule for this, and the pedigree has no column that

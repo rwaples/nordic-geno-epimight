@@ -24,8 +24,10 @@ relationship_degree <- function(relationship) {
 # Each person's relatives for the given relationships, from the validated pedigree (its
 # ids are text): data.table(person_id, relative_id, relationship). A directional
 # relationship lists only the person's elders (the pair's second member); the others list
-# every pair both ways. Two members of one multiple-birth set are not FS (SAP 4.1); they
-# stay probands and every other kind of relative. Only full sibs share a set.
+# every pair both ways. Two members of one multiple-birth set are not FS unless their
+# known sexes differ (SAP 4.1): a boy-girl pair is fraternal, a same-sex pair or one with
+# an unknown sex may be MZ. Each pair in a set is judged by its own two sexes. Twins stay
+# probands and every other kind of relative. Only full sibs share a set.
 relative_pairs <- function(pedigree, relationships) {
   ids <- pedigree$id
   graph <- pedigreegraph::pedigree_graph(data.frame(
@@ -42,7 +44,10 @@ relative_pairs <- function(pedigree, relationships) {
     stop("the checked pedigree has no multiple_birth_set column; rerun the check step",
          call. = FALSE)
   }
-  pairs <- pairs[!(code == "FS" & fcoalesce(birth_set[first_id] == birth_set[second_id], FALSE))]
+  sex <- as.character(pedigree$sex)
+  known <- sex %chin% c("1", "2")
+  pairs <- pairs[!(code == "FS" & fcoalesce(birth_set[first_id] == birth_set[second_id], FALSE) &
+                     !(known[first_id] & known[second_id] & sex[first_id] != sex[second_id]))]
   out <- rbindlist(lapply(seq_len(nrow(wanted)), function(i) {
     p <- pairs[code %in% wanted$pair_codes[[i]]]
     both <- if (wanted$directional[i]) {

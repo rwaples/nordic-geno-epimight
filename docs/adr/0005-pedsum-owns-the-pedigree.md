@@ -13,8 +13,8 @@ reads `.`, `NULL` and `None` as unknown parents, and the kit read them as ids. p
 never saw the site's own `birth_year` column, because the copy replaced it with the year
 of `birth_date` (rwaples/nordic-geno-epimight#3).
 
-The SAP also removes same-multiple-birth pairs from full siblings (section 4.1). Finding
-those pairs is pedigree work too (#2, #4).
+The SAP also removes same-sex pairs from one multiple birth from full siblings (section
+4.1). Finding those pairs is pedigree work too (#2, #4).
 
 ## Decision
 
@@ -31,8 +31,9 @@ pedigree needs a new check, the check goes into pedsum.
   `multiple_birth_set`. A site whose register records multiple births names that column
   in its site file (`multiple_birth_column`); the check step then runs pedsum with
   `--multiple-birth-col` in place of `--twin-max-days`, and pedsum checks that each set's
-  members are full sibs. The cohort step leaves pairs from one set out of `FS` and keeps
-  both people as probands and as every other kind of relative. The sets are not passed
+  members are full sibs. The cohort step leaves a pair from one set out of `FS` unless
+  its known sexes differ (SAP v8 4.1, #9), and keeps both people as probands and as every
+  other kind of relative. The sets are not passed
   to pedigreegraph as `twin` links, because a `twin` link means MZ co-twins and zygosity
   is unknown.
 - The kit sets pedsum's limits on children per parent (`--max-children-mother 20

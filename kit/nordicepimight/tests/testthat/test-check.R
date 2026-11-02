@@ -372,6 +372,8 @@ test_that("the site's own multiple-birth column replaces sets found from birth d
     s$site$multiple_birth_column <- "delivery"
     s$pedigree[, delivery := fifelse(id %in% c("c4", "c5"), "D1", NA_character_)]
     s$pedigree[id %in% c("c1", "c2"), birth_date := "1950-02-01"]
+    # Same-sex pairs, so that only the sets decide which leave FS.
+    s$pedigree[id %in% c("c2", "c5"), sex := c(1, 2)]
     s
   }, pedsum = TRUE)
   expect_equal(codes(result, "STOP"), character())

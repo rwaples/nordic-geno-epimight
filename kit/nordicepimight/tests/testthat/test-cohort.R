@@ -105,15 +105,24 @@ test_that("vertical relationships count only the person's elders", {
   expect_equal(of("c4", "1C"), c("c1", "c2", "c3"))
 })
 
-test_that("members of one multiple-birth set are not each other's FS", {
+test_that("same-sex members of one multiple-birth set are not each other's FS", {
+  # Triplets c1 (M), c2 (F), c3 (M); twins c4 (F), c5 (M); c6 (F) a single birth.
   p <- fixture_spec()$pedigree[, multiple_birth_set := c(rep(NA, 6), "1", "1", "1", "2", "2", NA)]
   pairs <- relative_pairs(p, c("FS", "1C"))
   of <- function(person, rel) sort(pairs[person_id == person & relationship == rel, relative_id])
-  expect_equal(of("c1", "FS"), character())
-  expect_equal(of("c4", "FS"), "c6")
+  expect_equal(of("c1", "FS"), "c2")
+  expect_equal(of("c2", "FS"), c("c1", "c3"))
+  expect_equal(of("c4", "FS"), c("c5", "c6"))
   expect_equal(of("c6", "FS"), c("c4", "c5"))
   expect_equal(of("c1", "1C"), c("c4", "c5", "c6"))
   expect_error(relative_pairs(fixture_spec()$pedigree, "FS"), "rerun the check step")
+})
+
+test_that("a multiple-birth pair with an unknown sex is not FS", {
+  p <- fixture_spec()$pedigree[, multiple_birth_set := c(rep(NA, 9), "2", "2", NA)]
+  p[id == "c5", sex := 0]
+  pairs <- relative_pairs(p, "FS")
+  expect_equal(sort(pairs[person_id == "c4", relative_id]), "c6")
 })
 
 test_that("pedsum finds a twin pair and a triplet set, and the cohort keeps them as probands", {
@@ -128,7 +137,8 @@ test_that("pedsum finds a twin pair and a triplet set, and the cohort keeps them
   expect_setequal(sets$N, c(3L, 2L))
   cohort <- build_cohort(checked$inputs)$cohort[trait == "t1"]
   expect_setequal(cohort$person_id, paste0("c", 1:6))
-  expect_equal(cohort[order(person_id), relatives_n], c(0L, 0L, 0L, 1L, 1L, 2L))
+  # Only the boy-girl pairs stay FS: c1-c2 and c2-c3 of the triplets, and the twins c4-c5.
+  expect_equal(cohort[order(person_id), relatives_n], c(1L, 2L, 1L, 2L, 2L, 2L))
 })
 
 test_that("only relatives with a trait-file row count", {

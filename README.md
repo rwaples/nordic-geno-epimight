@@ -271,7 +271,7 @@ direction, so list both rows if you want both.
 | `relationship` | Relatives | Relatedness |
 |---|---|---|
 | `PO` | parents | 0.5 |
-| `FS` | full siblings, except members of one multiple birth | 0.5 |
+| `FS` | full siblings, except same-sex members of one multiple birth | 0.5 |
 | `HS` | half siblings | 0.25 |
 | `mHS`, `pHS` | maternal or paternal half siblings | 0.25 |
 | `Av` | aunts and uncles | 0.25 |
@@ -281,12 +281,13 @@ direction, so list both rows if you want both.
 A relative counts only if they have a row in the trait file. PO, Av and 1G follow the
 pedigree, not birth order: an uncle younger than his nephew is still his uncle.
 
-Twins, triplets and other members of one multiple-birth set (step 0) are not each other's
-`FS` relatives, whatever their sex. SAP version 8 (4.1) keeps sex-discordant twin pairs
-as full siblings; the kit doesn't yet (`docs/SAP_kit_gaps.md`). They stay probands, and each
-stays every other kind of relative: a twin's children are still the co-twin's nieces and
-nephews. Zygosity is unknown, so the kit doesn't count any pair as MZ. The sandwich SEs
-still treat the twins as a related pair.
+Two members of one multiple-birth set (step 0) are not each other's `FS` relatives when
+they have the same sex, or either sex is unknown, since they may be MZ twins. A boy-girl
+pair is fraternal and stays `FS` (SAP version 8, 4.1). Each pair in a set of three or more
+is judged by its own two sexes. Twins stay probands, and each stays every other kind of
+relative: a twin's children are still the co-twin's nieces and nephews. Zygosity is
+unknown, so the kit doesn't count any pair as MZ. The sandwich SEs still treat the twins
+as a related pair.
 
 ## Outputs
 

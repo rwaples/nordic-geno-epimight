@@ -27,12 +27,13 @@ build the trait files. Questions 10 to 12 come from new rules in version 8.
 
 5. **Which twin pairs leave full siblings.** Version 8 settles the main question (4.1):
    sex-discordant twin pairs stay full siblings and sex-concordant pairs are left out.
-   The kit still leaves every pair of a multiple-birth set out of `FS` (ADR 0005) and
-   will change. Two details remain:
+   The kit now does this. Three details remain:
    - Does "left out" mean out of `FS` only, or out of every relationship? The kit now
      keeps both people as probands and as every other kind of relative.
    - In a set of three or more, is each pair judged by its own sexes, so a
-     brother-sister pair from mixed-sex triplets stays in?
+     brother-sister pair from mixed-sex triplets stays in? The kit does this.
+   - A pair where either sex is unknown can't be shown to be fraternal. The kit leaves it
+     out of `FS`. Is that right?
 
 ## The W3 window
 
