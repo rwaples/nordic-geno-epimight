@@ -44,7 +44,7 @@ prepare_toy <- function(toy, dir) {
   fwrite(pedigree, data("pedigree.tsv"), sep = "\t", na = "NA")
   for (f in c("trait1.tsv", "trait2.tsv")) {
     d <- fread(file.path(toy, "data", f), colClasses = "character")[, id := relabel(id)]
-    fwrite(d, data(f), sep = "\t")
+    fwrite(d, data(f), sep = "\t", na = "NA")
   }
   traits <- fread(file.path(toy, "plan", "traits.tsv"), colClasses = "character")
   traits <- rbind(traits, data.table(trait = UNESTIMABLE$trait, type = "tte", file = "trait1.tsv",
@@ -234,16 +234,16 @@ BROKEN <- list(
   },
   trait_duplicate_id = function(d) {
     t <- fread(file.path(d, "data", "trait1.tsv"), colClasses = "character")
-    fwrite(rbind(t, t[1]), file.path(d, "data", "trait1.tsv"), sep = "\t")
+    fwrite(rbind(t, t[1]), file.path(d, "data", "trait1.tsv"), sep = "\t", na = "NA")
   },
-  age_date_mismatch = function(d) {
+  code_not_case = function(d) {
     t <- fread(file.path(d, "data", "trait1.tsv"), colClasses = "character")
-    t[1, age := as.character(as.numeric(age) + 0.1)]
-    fwrite(t, file.path(d, "data", "trait1.tsv"), sep = "\t")
+    t[which(status == "0")[1], code := "X01"]
+    fwrite(t, file.path(d, "data", "trait1.tsv"), sep = "\t", na = "NA")
   },
   trait_population_differs = function(d) {
     t <- fread(file.path(d, "data", "trait2.tsv"), colClasses = "character")
-    fwrite(t[-1], file.path(d, "data", "trait2.tsv"), sep = "\t")
+    fwrite(t[-1], file.path(d, "data", "trait2.tsv"), sep = "\t", na = "NA")
   },
   relationship_unknown = function(d) {
     a <- fread(file.path(d, "plan", "analyses.tsv"), colClasses = "character")

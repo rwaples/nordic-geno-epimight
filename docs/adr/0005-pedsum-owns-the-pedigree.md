@@ -41,7 +41,7 @@ pedigree needs a new check, the check goes into pedsum.
   parent such as `9999` would otherwise become one founder with thousands of children.
 - The kit keeps the checks that need more than the pedigree. It checks the trait files
   against the pedigree (`trait_id_not_in_pedigree`, `date_before_birth`,
-  `age_date_mismatch`, `birth_date_missing` and `stratum_na` for the study population),
+  `birth_date_missing` and `stratum_na` for the study population),
   and it checks that the plan's stratify columns are in the pedigree
   (`stratify_not_in_pedigree`). pedsum never sees the trait files or the plan.
 

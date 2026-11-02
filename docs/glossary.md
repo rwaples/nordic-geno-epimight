@@ -34,7 +34,7 @@ A named definition in the trait list: one trait file plus the follow-up and seco
 _Avoid_: phenotype, variant
 
 **Trait file**:
-One file per trait, one row per person, with that person's status, age and date for the trait.
+One file per trait, one row per person, with that person's status, status date and, for a case, ICD code.
 _Avoid_: TTE table, phenotype file
 
 **Study population**:

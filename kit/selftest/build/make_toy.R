@@ -8,8 +8,9 @@
 # and 65. Birth dates are drawn per generation, 25 years apart, so that every date falls
 # before study_end (2023-12-31); birth_year binned by 25 then gives the old strata, 1962,
 # 1963 and 1964, as 1900, 1925 and 1950. Ages get a uniform fraction of a year, so the
-# cohort table's floored ages equal the old ones. Writes pedigree.tsv, trait1.tsv and
-# trait2.tsv.
+# cohort table's floored ages equal the old ones: the status_date is the nearest day whose
+# age, (status_date - birth_date) / 365.25, floors to the old age. Each case gets a
+# placeholder code. Writes pedigree.tsv, trait1.tsv and trait2.tsv.
 
 suppressPackageStartupMessages(library(data.table))
 args <- commandArgs(trailingOnly = TRUE)
@@ -55,17 +56,20 @@ own <- ped[, .(id, birth_date, generation)][own, on = "id"]
 stopifnot(identical(sort(unique(own$generation)), 2:4),
           own[, uniqueN(born_at_year), by = generation]$V1 == 1)
 own[, age := old_age + floor(runif(.N) * 1e4) / 1e4]
-own[, date := birth_date + as.integer(round(age * 365.25))]
-stopifnot(own$date <= as.IDate("2023-12-31"),
-          abs(as.integer(own$date - own$birth_date) / 365.25 - own$age) <= 1 / 365.25)
+own[, days := as.integer(round(age * 365.25))]
+own[floor(days / 365.25) > old_age, days := days - 1L]
+own[floor(days / 365.25) < old_age, days := days + 1L]
+own[, status_date := birth_date + days]
+stopifnot(own$status_date <= as.IDate("2023-12-31"), floor(own$days / 365.25) == own$old_age)
+own[, code := ifelse(status == 1, toupper(trait), NA_character_)]
 
 out <- args[3]
 dir.create(out, showWarnings = FALSE, recursive = TRUE)
 fwrite(ped[order(id), .(id, mother, father, sex, birth_date)],
        file.path(out, "pedigree.tsv"), sep = "\t", na = "NA")
 for (t in sort(unique(own$trait))) {
-  fwrite(own[trait == t][order(id), .(id, trait, status, age = sprintf("%.4f", age), date)],
-         file.path(out, paste0(t, ".tsv")), sep = "\t", quote = FALSE)
+  fwrite(own[trait == t][order(id), .(id, trait, status, status_date, code)],
+         file.path(out, paste0(t, ".tsv")), sep = "\t", quote = FALSE, na = "NA")
 }
 strata <- own[, .(s = paste(unique(born_at_year), collapse = ",")), by = generation]
 cat(sprintf("%d people, %d probands; old strata by generation: %s\n", nrow(ped),

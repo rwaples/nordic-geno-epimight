@@ -40,7 +40,7 @@ phenotype <- function(file, name) {
   d <- fread(in_data(file), colClasses = c(id = "character", status = "integer"))
   ped <- pedigree[match(d$id, pedigree$id)]
   d[, .(ID = id, Sex = ped$sex, BirthDate = ped$birth_date, Phenotype = name, Status = status,
-        FailureTime = age)]
+        FailureTime = as.numeric(as.IDate(status_date) - as.IDate(ped$birth_date)) / 365.25)]
 }
 number <- function(x) if (is.na(x) || x == "none") NULL else as.numeric(x)
 or_default <- function(x, default) if (is.na(x)) default else x

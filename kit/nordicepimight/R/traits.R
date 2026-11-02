@@ -1,10 +1,11 @@
 # Trait files: one row per person in the study population, with id, trait, status
-# (0 censored, 1 the trait, 2 a competing event), age (years, the source of truth) and
-# date (YYYY-MM-DD). Every trait file covers the same people (D9). A file may serve several
-# traits, so each is read and checked once.
+# (0 censored, 1 the trait, 2 a competing event), status_date (YYYY-MM-DD, the date that
+# set status) and an optional code (the case's ICD code, NA unless status is 1). Age is
+# not in the file: it is (status_date - birth_date) / 365.25 from the pedigree. Every
+# trait file covers the same people (D9). A file may serve several traits, so each is
+# read and checked once.
 
-TRAIT_FILE_COLUMNS <- c("id", "trait", "status", "age", "date")
-DAY <- 1 / 365.25
+TRAIT_FILE_COLUMNS <- c("id", "trait", "status", "status_date")
 
 read_trait_file <- function(path, pedigree, study_end) {
   dt <- read_tsv_text(path)
@@ -18,8 +19,8 @@ read_trait_file <- function(path, pedigree, study_end) {
     return(list(data = NULL, findings = collect(missing)))
   }
   status <- suppressWarnings(as.integer(dt$status))
-  age <- suppressWarnings(as.numeric(dt$age))
-  date <- as_date(dt$date)
+  date <- as_date(dt$status_date)
+  code <- if ("code" %in% names(dt)) dt$code else rep(NA_character_, nrow(dt))
   values <- unique(stats::na.omit(dt$trait))
   f <- list(
     flag(is.na(dt$id), "trait_id_missing", "a row has no id", path, which(is.na(dt$id))),
@@ -29,27 +30,24 @@ read_trait_file <- function(path, pedigree, study_end) {
          "the trait column must hold one value", path, values),
     flag(!(dt$status %in% c("0", "1", "2")), "status_invalid", "status must be 0, 1 or 2", path,
          sprintf("%s: %s", dt$id, dt$status)),
-    flag(is.na(age) | age < 0 | !is.finite(age), "age_invalid",
-         "age must be a number of years, 0 or more", path, sprintf("%s: %s", dt$id, dt$age)),
-    flag(is.na(date), "date_invalid", "date must be a date, YYYY-MM-DD", path,
-         sprintf("%s: %s", dt$id, dt$date))
+    flag(is.na(date), "date_invalid", "status_date must be a date, YYYY-MM-DD", path,
+         sprintf("%s: %s", dt$id, dt$status_date)),
+    flag(!is.na(code) & dt$status %chin% c("0", "2"), "code_not_case",
+         "code must be NA unless status is 1", path, sprintf("%s: %s", dt$id, code))
   )
   if (!is.null(pedigree)) {
     birth <- pedigree$birth_date[match(dt$id, pedigree$id)]
     in_ped <- dt$id %in% pedigree$id
-    years <- as.numeric(date - birth) / 365.25
     f <- c(f, list(
       flag(!in_ped & !is.na(dt$id), "trait_id_not_in_pedigree", "id has no pedigree row", path,
            dt$id),
-      flag(date < birth, "date_before_birth", "date is before birth_date", path,
+      flag(date < birth, "date_before_birth", "status_date is before birth_date", path,
            sprintf("%s: %s, born %s", dt$id, date, birth)),
       flag(!is.null(study_end) & date > study_end, "date_after_study_end",
-           "date is after study_end", path, sprintf("%s: %s", dt$id, date)),
-      flag(abs(age - years) > DAY, "age_date_mismatch",
-           "age differs from (date - birth_date) / 365.25 by more than a day", path,
-           sprintf("%s: age %s, date %s, born %s", dt$id, dt$age, date, birth))
+           "status_date is after study_end", path, sprintf("%s: %s", dt$id, date))
     ))
   }
+  age <- if (is.null(pedigree)) NA_real_ else as.numeric(date - birth) / 365.25
   data <- data.table::data.table(id = dt$id, status = status, age = age, date = date)
   list(data = data, findings = collect(f))
 }

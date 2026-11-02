@@ -198,20 +198,22 @@ validate must find nothing wrong with the file (step 0).
 
 ### Trait files
 
-One file per trait with `id, trait, status, age, date`, and one row for each person in the
-study population.
+One file per trait with `id, trait, status, status_date` and optionally `code`, and one
+row for each person in the study population.
 
 | Column | Meaning |
 |---|---|
 | `status` | 1 has the trait, 2 had a competing event such as death, 0 censored |
-| `age` | Years from birth to the status: onset, competing event or end of follow-up |
-| `date` | Date of the status. It must match `age` to within a day |
+| `status_date` | Date of the status: onset, competing event or end of follow-up |
+| `code` | Optional. ICD code of the first diagnosis for cases, `NA` for everyone else. The kit checks it but doesn't use it |
 | `trait` | One value for the whole file. The kit records it but doesn't use it |
 
-Ages may have fractions. EPIMIGHT uses whole years.
+The kit computes each age as `(status_date - birth_date) / 365.25`, from the pedigree's
+`birth_date`. EPIMIGHT uses whole years. Other columns are allowed and ignored, so check
+the names of the ones above: a column called `Code` is not `code`.
 
 All trait files must list the same people. If you exclude someone from a trait, keep their
-row and censor it (status 0) at the age they leave follow-up.
+row and censor it (status 0), with `status_date` the date they leave follow-up.
 
 ### plan/traits.tsv
 
@@ -315,12 +317,12 @@ cells, such as one new case between two ages of a CIF curve.
 
 ## When a run stops
 
-The check step stops on any input it can't use: unknown keys or columns, missing files,
-bad dates, ages or statuses, an age that disagrees with its date, duplicate ids, ids
-missing from the pedigree, trait files with different people, a missing stratum value,
-anything pedsum validate finds in the pedigree, or installed packages that don't match
-the pins. Each line of `out/1_check/findings.tsv` has a code, the file, a count, examples
-and what is wrong.
+The check step stops on any input it can't use: unknown keys, unknown columns in the
+plan's tables, missing files, bad dates or statuses, a code on someone who isn't a case,
+duplicate ids, ids missing from the pedigree, trait files with different people, a
+missing stratum value, anything pedsum validate finds in the pedigree, or installed
+packages that don't match the pins. Each line of `out/1_check/findings.tsv` has a code,
+the file, a count, examples and what is wrong.
 
 Some problems are warnings and don't stop the run, for example fewer than 10 cases in a
 stratum.

@@ -30,15 +30,21 @@ fixture_spec <- function() {
   )
 }
 
-# Trait file rows with `trait` and a date consistent with age, unless they already have one.
+# Trait file rows with `trait`, and a status_date `age` years after birth and a code for
+# each case, unless they already have a status_date. Drops `age`, which a trait file does
+# not hold.
 trait_rows <- function(rows, trait, pedigree) {
   rows <- copy(rows)
-  if (!("date" %in% names(rows))) {
+  if (!("status_date" %in% names(rows))) {
     birth <- as.IDate(pedigree$birth_date[match(rows$id, pedigree$id)])
-    rows[, date := as.character(birth + as.integer(round(age * 365.25)))]
+    rows[, status_date := as.character(birth + as.integer(round(age * 365.25)))]
+    if (!("code" %in% names(rows)) && "status" %in% names(rows)) {
+      rows[, code := ifelse(status == 1, "X01", NA_character_)]
+    }
   }
+  if ("age" %in% names(rows)) rows[, age := NULL]
   if (!("trait" %in% names(rows))) rows[, trait := trait]
-  setcolorder(rows, intersect(c("id", "trait", "status", "age", "date"), names(rows)))
+  setcolorder(rows, intersect(c("id", "trait", "status", "status_date", "code"), names(rows)))
   rows
 }
 

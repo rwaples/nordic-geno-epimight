@@ -30,7 +30,6 @@ right.
 - Ids are interpreted as text: `001`, `1` and `1.0` are three different people. **[kit]**
 - `0` is never an id, in any file.
 - Dates should be in this format: `YYYY-MM-DD`. **[kit]**
-- Ages can be given as decimals, computed as `(status_date - birth_date) / 365.25`.
 - No commas within numbers.
 
 ## 1. The pedigree
@@ -115,6 +114,7 @@ One row per person in the study population (2.2).
 | `trait` | text | One value for the whole file, for example `MDD`, matches trait definitions in `Definitions/Phenotype_list.tsv` |
 | `status` | integer | `1` has the trait (affected), `2` mortality while unaffected, `0` censored |
 | `status_date` | date, `YYYY-MM-DD` | The date that set `status` |
+| `code` | text | Optional. ICD code of the first diagnosis for cases (`status 1`), `NA` for everyone else |
 
 Don't put `age` in the trait files. The kit computes it from `birth_date` and
 `status_date`.
@@ -125,6 +125,7 @@ Don't put `age` in the trait files. The kit computes it from `birth_date` and
 - `trait` has more than one value
 - `status` isn't 0, 1 or 2
 - `status_date` isn't a date, is before the birth date, or is after `study_end`
+- `code`, if present, isn't `NA` for someone whose `status` is 0 or 2
 - the trait files don't all list the same people
 - someone in the trait files has no birth date in the pedigree
 
@@ -236,18 +237,18 @@ P5   -1      -1      2    2005-05-05
 `MDD.tsv`:
 
 ```
-id   trait  status  status_date
-P1   MDD    1       2012-06-01
-P2   MDD    2       2019-04-20
-P3   MDD    0       2018-09-01
-P4   MDD    0       2023-12-31
-P5   MDD    0       2023-12-31
-P6   MDD    0       2023-12-31
+id   trait  status  status_date  code
+P1   MDD    1       2012-06-01   F32
+P2   MDD    2       2019-04-20   NA
+P3   MDD    0       2018-09-01   NA
+P4   MDD    0       2023-12-31   NA
+P5   MDD    0       2023-12-31   NA
+P6   MDD    0       2023-12-31   NA
 ```
 
 | id | Why |
 |---|---|
-| P1 | First MDD diagnosis 2012-06-01 |
+| P1 | First MDD diagnosis 2012-06-01, code F32 |
 | P2 | Died 2019-04-20, never diagnosed |
 | P3 | Emigrated 2018-09-01 |
 | P4, P6 | Followed to `study_end` |

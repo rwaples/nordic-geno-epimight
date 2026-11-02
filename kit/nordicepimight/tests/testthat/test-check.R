@@ -25,10 +25,9 @@ with_windows <- function(s, windows) {
   s$relative_windows <- windows
   s
 }
-with_dates <- function(s, file, shift_days = 0, first_date = NULL) {
+with_dates <- function(s, file, first_date) {
   rows <- trait_rows(s$trait_files[[file]], "t1", s$pedigree)
-  rows[, date := as.character(as.IDate(date) + shift_days)]
-  if (!is.null(first_date)) rows[1, date := first_date]
+  rows[1, status_date := first_date]
   s$trait_files[[file]] <- rows
   s
 }
@@ -175,10 +174,6 @@ cases <- list(
     s$trait_files$t1.tsv[1, status := 3]
     s
   },
-  age_invalid = function(s) {
-    s$trait_files$t1.tsv <- trait_rows(s$trait_files$t1.tsv, "t1", s$pedigree)[1, age := -1]
-    s
-  },
   date_invalid = function(s) with_dates(s, "t1.tsv", first_date = "yesterday"),
   trait_id_not_in_pedigree = function(s) {
     s$trait_files$t1.tsv[1, id := "zz"]
@@ -189,7 +184,10 @@ cases <- list(
     s$trait_files$t1.tsv[6, age := 80]
     s
   },
-  age_date_mismatch = function(s) with_dates(s, "t1.tsv", shift_days = 2),
+  code_not_case = function(s) {
+    s$trait_files$t1.tsv <- trait_rows(s$trait_files$t1.tsv, "t1", s$pedigree)[2, code := "X01"]
+    s
+  },
   trait_population_differs = function(s) {
     s$trait_files$t2.tsv <- s$trait_files$t2.tsv[-6]
     s
@@ -278,6 +276,35 @@ test_that("any repair pedsum would make stops the run", {
     s
   }, pedsum = TRUE)
   expect_equal(codes(sex, "STOP"), "pedigree_invalid")
+})
+
+test_that("a code on a competing-event row stops", {
+  result <- check_fixture(function(s) {
+    rows <- trait_rows(s$trait_files$t1.tsv, "t1", s$pedigree)
+    stopifnot(rows$status[3] == 2)
+    s$trait_files$t1.tsv <- rows[3, code := "X01"]
+    s
+  })
+  expect_contains(codes(result, "STOP"), "code_not_case")
+})
+
+test_that("age is the days from birth to status_date over 365.25", {
+  path <- tempfile(fileext = ".tsv")
+  fwrite(data.table(id = "P1", trait = "MDD", status = 1, status_date = "2012-06-01"), path,
+         sep = "\t")
+  pedigree <- data.table(id = "P1", birth_date = as.IDate("1990-03-15"))
+  out <- read_trait_file(path, pedigree, as.IDate("2023-12-31"))
+  expect_equal(out$data$age, 8114 / 365.25)
+})
+
+test_that("trait files without a code column pass", {
+  result <- check_fixture(function(s) {
+    s$trait_files <- lapply(s$trait_files, function(rows) {
+      trait_rows(rows, "t", s$pedigree)[, code := NULL]
+    })
+    s
+  })
+  expect_equal(codes(result, "STOP"), character())
 })
 
 test_that("a founder pedsum added, with no birth date or trait row, passes", {

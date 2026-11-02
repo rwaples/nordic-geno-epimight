@@ -8,7 +8,7 @@
 - `data/pedigree.tsv`: 7,500 people in five generations of 1,500, with `id, mother, father,
   sex, birth_date`. The first two generations are founders' lines with no trait rows.
 - `data/trait1.tsv`, `data/trait2.tsv`: one row for each of the 4,500 people in generations 2 to 4,
-  with `id, trait, status, age, date`. Status 2 (a competing event) occurs in both.
+  with `id, trait, status, status_date, code`. Status 2 (a competing event) occurs in both.
 - `plan/`: h² for both traits and rg in both
   directions, for PO, FS and HS, stratified by birth year in 25-year bins (1900, 1925,
   1950).
@@ -18,8 +18,9 @@ generation; follow-up ending at age 80, 75 and 65 in generations 2, 3 and 4).
 fitACE_epimight's `create_input` built the first kit's pool from it, and 803 censored
 outcomes became competing events. `build/make_toy.R` rebuilt that toy in these formats
 without changing any outcome: it draws birth dates per generation, 25 years apart, so
-every date falls before `study_end`, and adds a fraction of a year to each age, so the
-cohort table's whole-year ages equal the first toy's. To rebuild it:
+every date falls before `study_end`, and sets each `status_date` a fraction of a year past
+the first toy's age, so the cohort table's whole-year ages equal the first toy's. Each case
+gets a placeholder `code`. To rebuild it:
 
 ```sh
 git show python-v0:selftest/toy/pedigree.tsv > /tmp/old_pedigree.tsv
