@@ -50,10 +50,13 @@ One row per person.
 | `birth_date` | date, `YYYY-MM-DD` | Date of birth | optional |
 | `birth_year` | integer, 4 digits | Must agree with `birth_date` | optional |
 | `multiple_birth_id` | integer | Same number for everyone born in one delivery, `NA` for single births. Each delivery gets its own number | optional |
+| `birth_place` | text | Country of birth as an ISO 3166-1 alpha-2 code (`DK`, `SE`, `NO`, ...), `NA` if unknown | optional |
 
 - Missing parent: `NA`, `-1`, or your own code passed to pedsum with
   `--missing-parent-token`. Never `0`. **[kit]**
 - Give every parent a row of their own where you can.
+- Fill `birth_place` if your register has it. The SAP restricts probands to people born
+  in the country (4.1). The kit doesn't use the column yet (issue #12). **[recommended]**
 
 ### 1.2 Who goes in
 
@@ -308,7 +311,7 @@ Follow the current rule and note what you did.
 
 | Open point | For now | Tracked in |
 |---|---|---|
-| Probands born in the country only **[SAP 4.1]** | Keep people born abroad, count them | `SAP_kit_gaps.md` |
+| Probands born in the country only **[SAP 4.1]** | Keep people born abroad, count them, fill `birth_place` | issue #12 |
 | Proband birth ranges for W2 and W3 | Run W1 only | `SAP_kit_gaps.md` |
 | Twins: SAP keeps boy-girl pairs as full siblings **[SAP 4.1]**; the kit drops every pair | Nothing to do | `SAP_kit_gaps.md`, open question 5 |
 | Main diagnoses only, or secondary too | Count both | Open question 9 |
