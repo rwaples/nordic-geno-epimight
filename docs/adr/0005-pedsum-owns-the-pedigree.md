@@ -55,8 +55,8 @@ pedigree needs a new check, the check goes into pedsum.
   `birth_date_topology` compares the birth dates, to the day.
 - The kit needs a pedsum with `--twin-max-days`, `birth_date_topology`,
   `--max-children-mother`/`--max-children-father` and a numbered `multiple_birth_set`
-  under `--multiple-birth-col` (rwaples/pedsum#27, #29). `pixi.toml` pins pedsum v0.15.0,
-  the first release with all of them.
+  under `--multiple-birth-col` (rwaples/pedsum#27, #29). pedsum v0.15.0 is the first
+  release with all of them.
 - EPIMIGHT's sandwich SEs sum over every related pair up to `max_degree`, not over the
   analysis's relationship (`SandwichAnalysis-class.R:503` in epimight). Twins stay a
   dependent pair there, as they should, after they leave the `FS` counts.
