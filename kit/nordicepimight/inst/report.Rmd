@@ -45,9 +45,11 @@ version_of <- function(pkg) {
 
 ```{r run, results = "asis"}
 table_of(data.table(
-  item = c("site", "plan checksum", "study population", "EPIMIGHT", "pedigreegraph", "R",
-           "stratified by", "pooling", "EPIMIGHT calls", "warnings at check"),
+  item = c("site", "plan checksum", "study population", "kit", "EPIMIGHT", "pedigreegraph",
+           "R", "stratified by", "pooling", "EPIMIGHT calls", "warnings at check"),
   value = c(run$site, run$plan_checksum, run$population,
+            sprintf("%s (%s)", run$kit$version %||% "unknown",
+                    substr(run$kit$commit %||% "unknown", 1, 7)),
             version_of("epimight"), version_of("pedigreegraph"),
             run$r_version, paste(stratify, collapse = ", "), run$settings$pooling,
             sprintf("%d (%d ok, %d expected stops)", run$epimight$calls, run$epimight$ok,

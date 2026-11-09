@@ -39,3 +39,17 @@ test_that("later steps stop when an input changed after check", {
   other <- write_fixture()
   expect_error(run_step("cohort", run_cohort, c(other, out)), "differ from what")
 })
+
+test_that("later steps stop when the kit is not the one check ran with", {
+  path <- write_fixture()
+  out <- tempfile("out")
+  capture.output(run_step("check", run_check, c(path, out)))
+  expect_silent(stop_if_kit_changed(out))
+  other <- utils::modifyList(kit_source(), list(commit = "another"))
+  expect_error(stop_if_kit_changed(out, other), "with another kit")
+  record <- file.path(out, "1_check", "run.yaml")
+  recorded <- yaml::read_yaml(record)
+  recorded$kit <- NULL
+  yaml::write_yaml(recorded, record)
+  expect_error(run_step("cohort", run_cohort, c(path, out)), "not recorded")
+})

@@ -14,6 +14,14 @@ installed_sources <- function() {
   })
 }
 
+# The kit's own source, which `pixi run setup` wrote into this package's DESCRIPTION when it
+# installed it: the repository's `git describe` and commit. Both are "unknown" when setup
+# ran outside a git checkout.
+kit_source <- function(desc = utils::packageDescription("nordicepimight")) {
+  list(nordicepimight = desc$Version, version = desc$RemoteRef %||% "unknown",
+       commit = desc$RemoteSha %||% "unknown")
+}
+
 # One line per pinned package whose installed version or commit differs from its pin.
 pin_mismatches <- function(installed = installed_sources(), pinned = pins()) {
   unlist(lapply(names(pinned), function(pkg) {

@@ -372,7 +372,7 @@ run_record <- function(out, inputs, epimight, tables) {
   list(
     site = study$site,
     plan_checksum = check$plan_checksum,
-    kit = list(nordicepimight = as.character(utils::packageVersion("nordicepimight"))),
+    kit = kit_source(),
     installed = epimight$installed,
     r_version = epimight$r_version,
     inputs = check$inputs,

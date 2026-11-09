@@ -22,6 +22,14 @@ test_that("a different commit or a missing package is reported", {
   expect_match(out[2], "^pedigreegraph: installed NA")
 })
 
+test_that("the kit's source is what setup stamped, or unknown", {
+  stamped <- list(Version = "0.0.1", RemoteRef = "v0.1.0", RemoteSha = "abc")
+  expect_identical(kit_source(stamped),
+                   list(nordicepimight = "0.0.1", version = "v0.1.0", commit = "abc"))
+  expect_identical(kit_source(list(Version = "0.0.1")),
+                   list(nordicepimight = "0.0.1", version = "unknown", commit = "unknown"))
+})
+
 test_that("the shipped pins name both GitHub packages by full commit", {
   p <- pins()
   expect_setequal(names(p), c("epimight", "pedigreegraph"))

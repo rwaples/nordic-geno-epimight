@@ -34,8 +34,41 @@ install_pinned <- function(pkg) {
 install_pinned("pedigreegraph")
 install_pinned("epimight")
 
+# The kit's commit and `git describe`, which run.yaml records: from the image build
+# (container/build.sh sets both variables), else from git when this folder is the top of
+# its own checkout, so an enclosing repository is never read. `-dirty` marks changed or
+# untracked files under kit/. NULL when neither knows.
+source_stamp <- function() {
+  env <- Sys.getenv(c("KIT_COMMIT", "KIT_VERSION"))
+  if (all(nzchar(env))) {
+    return(unname(env))
+  }
+  git <- function(...) {
+    tryCatch(system2("git", c(...), stdout = TRUE, stderr = FALSE),
+             error = function(e) NULL, warning = function(w) NULL)
+  }
+  if (!identical(git("rev-parse", "--show-prefix"), "")) {
+    return(NULL)
+  }
+  commit <- git("rev-parse", "HEAD")
+  version <- git("describe", "--tags", "--always")
+  if (length(commit) != 1 || length(version) != 1) {
+    return(NULL)
+  }
+  dirty <- length(git("status", "--porcelain", "--", "kit")) > 0
+  c(commit, paste0(version, if (dirty) "-dirty"))
+}
+
 message("installing nordicepimight")
-install.packages("kit/nordicepimight", repos = NULL, type = "source", quiet = TRUE)
+stamp <- source_stamp()
+stamped <- file.path(tempfile(), "nordicepimight")
+dir.create(dirname(stamped))
+file.copy("kit/nordicepimight", dirname(stamped), recursive = TRUE)
+if (!is.null(stamp)) {
+  cat(sprintf("RemoteSha: %s\nRemoteRef: %s\n", stamp[1], stamp[2]),
+      file = file.path(stamped, "DESCRIPTION"), append = TRUE)
+}
+install.packages(stamped, repos = NULL, type = "source", quiet = TRUE)
 
 library(nordicepimight)
 problems <- pin_mismatches()

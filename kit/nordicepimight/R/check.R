@@ -104,6 +104,7 @@ run_check <- function(study_path, out, dir) {
     stops = sum(findings$severity == "STOP"),
     warnings = sum(findings$severity == "WARN"),
     inputs = lapply(files, function(p) list(path = unname(p), md5 = unname(tools::md5sum(p)))),
+    kit = kit_source(),
     installed = installed_sources(),
     r_version = R.version.string
   ), file.path(dir, "run.yaml"))

@@ -17,8 +17,8 @@ The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects 
 | 6 | `export` | Prepares the data for export by suppressing PII. |
 
 Each step relies on the output of previous step(s). Rerunning a step deletes the output of
-the steps after it. If an input file changes after `check`, the later steps stop until you
-rerun `check`.
+the steps after it. If an input file or the kit itself changes after `check`, the later
+steps stop until you rerun `check`.
 
 Current status: **preliminary**.
 

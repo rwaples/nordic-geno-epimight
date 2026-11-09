@@ -60,6 +60,18 @@ run_study <- function(args = commandArgs(trailingOnly = TRUE)) {
   invisible(TRUE)
 }
 
+# Stops when this kit is not the one the check step ran with, so the kit run.yaml names
+# made every step of the run.
+stop_if_kit_changed <- function(out, now = kit_source()) {
+  was <- yaml::read_yaml(file.path(step_dir(out, "check"), "run.yaml"))$kit
+  label <- function(kit) sprintf("%s, commit %s", kit$version %||% "not recorded",
+                                 kit$commit %||% "not recorded")
+  if (label(was) != label(now)) {
+    stop(sprintf("`pixi run check` ran in %s with another kit (%s); this one is %s. Rerun it",
+                 out, label(was), label(now)), call. = FALSE)
+  }
+}
+
 # One step: reads `SITE.yaml OUT/` from the command line, runs
 # `fun(study_path, out, dir)` in a fresh step directory, and marks it done when `fun`
 # returns TRUE. Exits 1 otherwise.
@@ -76,6 +88,7 @@ run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
       stop(sprintf("these inputs differ from what `pixi run check` saw in %s; rerun it:\n  %s",
                    out, paste(changed, collapse = "\n  ")), call. = FALSE)
     }
+    stop_if_kit_changed(out)
   }
   dir <- begin_step(out, step)
   ok <- fun(study_path, out, dir)
