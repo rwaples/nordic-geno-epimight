@@ -1,6 +1,6 @@
 # EPIMIGHT is built from a pinned commit of its sandwich branch
 
-Status: accepted (2026-10-14)
+Status: accepted (2026-10-14). ADR 0006 adds an Apptainer image built from this install.
 
 ## Context
 

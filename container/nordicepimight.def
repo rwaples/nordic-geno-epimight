@@ -1,0 +1,93 @@
+# The kit as one Apptainer image, for servers without internet access (ADR 0006).
+# Build it with container/build.sh, which gives this recipe a copy of the repository as src/.
+#
+# The base is pixi 0.84.1 on Debian bookworm-slim, pinned by digest. %post runs the same
+# install as the README (pixi install --locked, pixi run setup), so the image holds the
+# environment of pixi.lock and the two R packages of kit/nordicepimight/inst/pins.yaml.
+Bootstrap: docker
+From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0ad3008dd3e8a6ed1b38a4
+
+%files
+    src /opt/kit
+
+%post
+    set -eu
+    export PIXI_CACHE_DIR=/var/tmp/pixi-cache CARGO_HOME=/var/tmp/cargo
+    cd /opt/kit
+    # pixi fetches pedsum with git, which the base image lacks.
+    pixi exec --spec git -- pixi install --locked
+    KIT_COMMIT="{{ KIT_COMMIT }}" KIT_VERSION="{{ KIT_VERSION }}" pixi run --locked setup
+    pixi run --locked test
+    # The image is read-only, so fontconfig can't write its cache when a plot needs it.
+    pixi run --locked fc-cache -f
+    rm -rf "$PIXI_CACHE_DIR" "$CARGO_HOME" /root/.cache
+
+%environment
+    export PATH=/opt/kit/.pixi/envs/default/bin:$PATH
+    export CONDA_PREFIX=/opt/kit/.pixi/envs/default
+    export LC_ALL=C.UTF-8
+    # Apptainer passes the host's variables and home folder in. Keep the host's R
+    # libraries and startup files out of the run. Each variable is set, not unset:
+    # Apptainer puts the host's value back for any variable left unset here.
+    export R_HOME=/opt/kit/.pixi/envs/default/lib/R
+    export R_LIBS= R_LIBS_SITE= R_LIBS_USER=/nonexistent
+    export R_PROFILE=/dev/null R_PROFILE_USER=/dev/null
+    export R_ENVIRON=/dev/null R_ENVIRON_USER=/dev/null
+
+%runscript
+    usage() {
+        cat /.singularity.d/runscript.help
+    }
+    if [ $# -eq 0 ]; then
+        usage
+        exit 2
+    fi
+    command=$1
+    shift
+    case "$command" in
+        help | -h | --help)
+            usage
+            ;;
+        pedsum)
+            # -I keeps the host's PYTHONPATH and user site-packages out, as the kit does.
+            exec python -I -m pedsum "$@"
+            ;;
+        selftest)
+            # The self-test reads kit/selftest from the working folder.
+            if [ $# -ne 1 ]; then
+                echo "usage: apptainer run IMAGE selftest OUT/" >&2
+                exit 2
+            fi
+            out=$(realpath -m -- "$1")
+            cd /opt/kit
+            exec Rscript -e 'nordicepimight::main("selftest")' "$out"
+            ;;
+        *)
+            exec Rscript -e 'a <- commandArgs(TRUE); nordicepimight::main(a[1], a[-1])' \
+                "$command" "$@"
+            ;;
+    esac
+
+%test
+    out=$(mktemp -d)
+    trap 'rm -rf "$out"' EXIT
+    cd /opt/kit
+    Rscript -e 'nordicepimight::main("selftest")' "$out/selftest"
+
+%labels
+    kit.source https://github.com/rwaples/nordic-geno-epimight
+    kit.commit {{ KIT_COMMIT }}
+    kit.version {{ KIT_VERSION }}
+
+%help
+    nordic-geno-epimight {{ KIT_VERSION }} ({{ KIT_COMMIT }})
+
+    apptainer run IMAGE study SITE.yaml OUT/     steps 1-6 in order
+    apptainer run IMAGE STEP SITE.yaml OUT/      one step: check, cohort, epimight, tables,
+                                                 report or export
+    apptainer run IMAGE selftest OUT/            the kit on its toy study
+    apptainer run IMAGE pedsum ARGS...           pedsum, to check or repair a pedigree
+
+    The shared plan is in the image: write `plan: /opt/kit/plan/initial.yaml` in the site
+    file. Bind the folders your site file names with --bind. The README and docs are under
+    /opt/kit.

@@ -4,6 +4,8 @@
 .DS_Store
 out/
 selftest-out/
+*.sif
+*.sif.sha256
 local/*
 !local/example.yaml
 .~lock.*#

@@ -61,6 +61,47 @@ computed independently. It takes about 2 minutes, prints one PASS, FAIL or SKIP 
 check, and exits 1 if any check fails. Run it before using your own data.
 `kit/selftest/README.md` describes each check.
 
+### On a server without internet access
+
+The install above downloads software, so it can't run on a server without internet
+access. For those servers each release has one [Apptainer](https://apptainer.org) image
+on the [releases page](https://github.com/rwaples/nordic-geno-epimight/releases):
+`nordic-geno-epimight-<version>.sif`, about 1 GB, with a `.sha256` file. The image holds the kit, all
+its software and the shared plan. The server needs Apptainer or Singularity (the
+commands are the same with `singularity` in place of `apptainer`), and neither pixi nor
+this repository.
+
+1. Download both files on a computer with internet access and import them the way your
+   server imports any file.
+2. Check the file, then run the self-test:
+
+   ```sh
+   sha256sum -c nordic-geno-epimight-<version>.sif.sha256
+   apptainer run nordic-geno-epimight-<version>.sif selftest selftest-out/
+   ```
+
+3. Write your site file as [below](#run-at-your-site), in any folder, from this
+   template:
+
+   ```sh
+   apptainer exec nordic-geno-epimight-<version>.sif cat /opt/kit/local/example.yaml > denmark.yaml
+   ```
+
+   The plan is inside the image, so set `plan: /opt/kit/plan/initial.yaml`.
+4. Run the kit. Wherever this README says `pixi run`, write `apptainer run` and the
+   image:
+
+   ```sh
+   apptainer run --bind /path/to/data nordic-geno-epimight-<version>.sif study denmark.yaml out/
+   ```
+
+Apptainer shows the image your home folder, the folder you run it from and `/tmp`. Name
+every other folder your site file uses with `--bind`. `apptainer run-help` on the image
+lists the commands, and `/opt/kit` in the image holds this README and `docs/`. Each
+run's `run.yaml` records the image's version and commit under `kit`.
+
+To build the image yourself, run `container/build.sh` (ADR 0006).
+
 ## Run at your site
 
 1. Prepare your data folder (step 0, below).
@@ -340,6 +381,8 @@ one.
 - `kit/`: the kit's R package (`nordicepimight/`), its setup script, and the self-test's
   toy site, expected results and the scripts that build them. `pixi run test` and
   `pixi run lint` check the package.
+- `container/`: the recipe and build script of the Apptainer image, for servers without
+  internet access.
 - `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
 - `docs/`: the glossary, design decisions (`adr/`), open questions, the statistical
   analysis plan (SAP, `SAP_Scandinavian_Genealogy.md` and its source docx), the data

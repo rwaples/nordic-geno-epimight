@@ -1,0 +1,56 @@
+# Builds the kit's Apptainer image (ADR 0006). A v* tag also attaches it to that tag's
+# GitHub release and pushes it to ghcr.io. The build runs the unit tests and the self-test
+# inside the image.
+name: container
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  sif:
+    runs-on: ubuntu-24.04
+    env:
+      APPTAINER: pixi exec --spec apptainer=1.5.4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: prefix-dev/setup-pixi@v0.11.3
+        with:
+          pixi-version: v0.84.1
+          run-install: false
+      # Ubuntu 24.04 denies user namespaces to programs without an AppArmor profile.
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Build and self-test
+        run: |
+          $APPTAINER container/build.sh
+          echo "IMAGE=$(ls nordic-geno-epimight-*.sif)" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sif
+          path: |
+            ${{ env.IMAGE }}
+            ${{ env.IMAGE }}.sha256
+          retention-days: 7
+      - name: Attach to the release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1 ||
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes
+          gh release upload "$GITHUB_REF_NAME" "$IMAGE" "$IMAGE.sha256" --clobber
+      - name: Push to ghcr.io
+        if: github.ref_type == 'tag'
+        run: |
+          echo "${{ github.token }}" |
+            $APPTAINER apptainer registry login --username "${{ github.actor }}" \
+              --password-stdin oras://ghcr.io
+          $APPTAINER apptainer push "$IMAGE" \
+            "oras://ghcr.io/${{ github.repository }}:$GITHUB_REF_NAME"
