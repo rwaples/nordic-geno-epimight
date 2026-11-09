@@ -275,8 +275,8 @@ run_selftest <- function(out, selftest = "kit/selftest") {
   toy_dir <- file.path(out, "toy")
   study <- prepare_toy(file.path(selftest, "toy"), toy_dir)
   run_dir <- file.path(out, "run")
-  status <- system2(Sys.which("Rscript"), c("-e", shQuote("nordicepimight::main(\"study\")"), study,
-                                            run_dir))
+  status <- system2(Sys.which("Rscript"), c("-e", shQuote("nordicepimight::main(\"study\")"),
+                                            shQuote(study), shQuote(run_dir)))
   items <- item("toy: every step runs", if (status == 0) "PASS" else "FAIL",
                 sprintf("pixi run study exited %d", status))
   if (status == 0) {
