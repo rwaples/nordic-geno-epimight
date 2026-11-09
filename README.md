@@ -24,12 +24,12 @@ Current status: **preliminary**.
 
 ## Install
 
-The kit needs [pixi](https://pixi.sh) 0.82. pixi installs one binary under
+The kit needs [pixi](https://pixi.sh) 0.84. pixi installs one binary under
 `~/.pixi/bin` and doesn't need root. Its installer fetches the latest release unless told
 otherwise, and the kit refuses any other series, so name the version:
 
 ```sh
-curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=v0.82.0 bash
+curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=v0.84.1 bash
 export PATH="$HOME/.pixi/bin:$PATH"
 pixi --version
 ```
@@ -39,7 +39,7 @@ The installer also adds `~/.pixi/bin` to `PATH` in your shell's startup file. If
 already have pixi at another version, switch with:
 
 ```sh
-pixi self-update --version v0.82.0
+pixi self-update --version v0.84.1
 ```
 
 Then get the kit and install it:
