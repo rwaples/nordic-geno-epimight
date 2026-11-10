@@ -64,8 +64,9 @@ run_study <- function(args = commandArgs(trailingOnly = TRUE)) {
 # made every step of the run.
 stop_if_kit_changed <- function(out, now = kit_source()) {
   was <- yaml::read_yaml(file.path(step_dir(out, "check"), "run.yaml"))$kit
-  label <- function(kit) sprintf("%s, commit %s", kit$version %||% "not recorded",
-                                 kit$commit %||% "not recorded")
+  label <- function(kit) {
+    sprintf("%s, commit %s", kit$version %||% "not recorded", kit$commit %||% "not recorded")
+  }
   if (label(was) != label(now)) {
     stop(sprintf("`pixi run check` ran in %s with another kit (%s); this one is %s. Rerun it",
                  out, label(was), label(now)), call. = FALSE)
