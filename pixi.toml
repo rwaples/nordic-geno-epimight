@@ -25,7 +25,7 @@ r-tidyr = "*"
 r-yaml = "*"
 r-rjson = "*"
 r-stringr = "*"
-# pedigreegraph 0.14.0's Imports, and the Rust toolchain it compiles with (rustc >= 1.85).
+# pedigreegraph 0.15.0's Imports, and the Rust toolchain it compiles with (rustc >= 1.85).
 r-matrix = "*"
 rust = ">=1.85"
 c-compiler = "*"
@@ -44,7 +44,7 @@ r-lintr = "*"
 python = "3.14.*"
 
 [pypi-dependencies]
-pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.16.0" }
+pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.17.0" }
 
 [tasks]
 setup = { cmd = "Rscript kit/setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }

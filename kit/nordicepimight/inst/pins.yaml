@@ -7,7 +7,7 @@ epimight:
   version: 2.2.0
 pedigreegraph:
   repo: rwaples/pedigree-graph
-  tag: v0.14.0
-  commit: 722282a7dafee5bd5cad163c35a113e6daec9f47
+  tag: v0.15.0
+  commit: 6deaa4c2f53c154b6eebb52e3c9184581efc0a1c
   subdir: r
-  version: 0.14.0
+  version: 0.15.0
