@@ -21,6 +21,8 @@ jobs:
     env:
       # remotes::install_github in setup reads it, which lifts GitHub's rate limit.
       GITHUB_PAT: ${{ github.token }}
+      # testthat's progress reporter quits after 10 failures; run every test file.
+      TESTTHAT_MAX_FAILS: Inf
     steps:
       - uses: actions/checkout@v7
         with:
