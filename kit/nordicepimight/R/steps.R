@@ -19,12 +19,24 @@ in_image <- function() nzchar(Sys.getenv("KIT_IN_IMAGE"))
 kit_command <- function(image = in_image()) if (image) "apptainer run IMAGE" else "pixi run"
 
 # Inside the image the kit sees only the home folder, the current folder, /tmp and the
-# folders named with --bind, so a file that exists on the server can look missing.
+# folders named with --bind, so a file that exists on the server can look missing. A link
+# is followed inside the image, so its target must be bound, not the folder the link is in.
 BIND_HINT <- paste(
   "The image sees only your home folder, the current folder, /tmp and the folders you",
-  "name with --bind. If the file exists, bind its folder:",
-  "apptainer run --bind /path/to/folder IMAGE ..."
+  "name with --bind. If the file or folder exists, bind the folder it is in:",
+  "apptainer run --bind /path/to/folder IMAGE ...",
+  "If the path is a link, or passes through one, bind the folder the link points to."
 )
+
+# Creates an output folder. In the image, a folder that can't be created is most often
+# under a folder not bound with --bind: the image itself is read-only.
+create_out_dir <- function(dir, image = in_image()) {
+  if (!dir.exists(dir) && !dir.create(dir, recursive = TRUE, showWarnings = FALSE)) {
+    stop(paste(sprintf("can't create the output folder %s.", dir),
+               if (image) BIND_HINT else "Check that you may write there."), call. = FALSE)
+  }
+  dir
+}
 
 begin_step <- function(out, step) {
   i <- match(step, STEPS)
@@ -36,9 +48,7 @@ begin_step <- function(out, step) {
     unlink(step_dir(out, later), recursive = TRUE)
     unlink(file.path(out, TOP_LEVEL_OUTPUTS[[later]]))
   }
-  dir <- step_dir(out, step)
-  dir.create(dir, recursive = TRUE)
-  dir
+  create_out_dir(step_dir(out, step))
 }
 
 finish_step <- function(out, step) {
@@ -93,6 +103,9 @@ main <- function(command, args = commandArgs(trailingOnly = TRUE)) {
 
 # pixi run study SITE.yaml OUT/: every step in order, stopping at the first that fails.
 run_study <- function(args = commandArgs(trailingOnly = TRUE)) {
+  if (length(args) != 2) {
+    stop(sprintf("usage: %s study SITE.yaml OUT/", kit_command()), call. = FALSE)
+  }
   for (step in STEPS) {
     cat(sprintf("== %s\n", step))
     run_step(step, step_functions()[[step]], args)

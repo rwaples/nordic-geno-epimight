@@ -6,6 +6,23 @@ test_that("a step needs the one before it to have finished", {
   expect_true(dir.exists(begin_step(out, "cohort")))
 })
 
+test_that("an output folder that can't be created stops, pointing at --bind in the image", {
+  blocker <- tempfile("file")
+  writeLines("x", blocker)
+  out <- file.path(blocker, "out")
+  expect_error(begin_step(out, "check"), "can't create the output folder")
+  expect_error(create_out_dir(out, image = TRUE), "--bind")
+  expect_error(create_out_dir(out, image = FALSE), "may write there")
+  expect_error(run_selftest(out), "can't create the output folder")
+  expect_match(BIND_HINT, "link points to")
+})
+
+test_that("study and a step each name themselves in their usage", {
+  expect_error(run_study(character()), "usage: pixi run study SITE.yaml OUT/", fixed = TRUE)
+  expect_error(run_step("check", run_check, "site.yaml"),
+               "usage: pixi run check SITE.yaml OUT/", fixed = TRUE)
+})
+
 test_that("starting a step deletes its own and every later step's output", {
   out <- tempfile("out")
   for (step in STEPS) {

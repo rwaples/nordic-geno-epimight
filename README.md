@@ -99,8 +99,20 @@ this repository.
 Apptainer shows the image your home folder, the folder you run it from and `/tmp`. Name
 every other folder your site file uses with `--bind`. If you forget one, the kit says a
 file or folder is not found and reminds you of `--bind`. `apptainer run-help` on the image
-lists the commands, and `/opt/kit` in the image holds this README and `docs/`. Each
-run's `run.yaml` records the image's version and commit under `kit`.
+lists the commands. Each run's `run.yaml` records the image's version and commit under
+`kit`.
+
+Bind the folder your files are really in. If a path in your site file is a link, or
+passes through one, bind the folder the link points to. The output folder follows the
+same rule: bind the folder you want it in, unless that is your home folder, the folder
+you run from or `/tmp`.
+
+The image holds this README and `docs/` under `/opt/kit`. To read one on the server:
+
+```sh
+apptainer exec nordic-geno-epimight-<version>.sif cat /opt/kit/docs/step-0.md | less
+apptainer exec nordic-geno-epimight-<version>.sif ls /opt/kit /opt/kit/docs
+```
 
 To build the image yourself, run `container/build.sh` (ADR 0006).
 
@@ -119,7 +131,25 @@ To build the image yourself, run `container/build.sh` (ADR 0006).
    individual-level data.
 
 Start with the initial plan. For the complete one, change `plan:` in your site file to
-`../plan/complete.yaml` and use a new output folder.
+`../plan/complete.yaml` (`/opt/kit/plan/complete.yaml` with the image) and use a new
+output folder.
+
+### Time and memory
+
+The kit has not been timed on a full register yet, so there is no figure to plan with.
+The toy site (4,500 people in the study population, 2 traits, 38 EPIMIGHT calls) takes
+36 seconds and 0.5 GB of memory with `threads: 2`. To measure your site before the full
+plan:
+
+- Run `check` and `cohort` on their own first. They read every input and build the
+  largest table, `cohort.tsv`.
+- The `epimight` step prints the seconds each call took, and `run.yaml` records the total
+  under `wall_seconds`. The calls run one after another. The initial plan has 537
+  analyses and the complete one 1,083 (`plan/README.md`).
+- `threads` speeds up pedsum, the relative counts and the sandwich SEs. Don't set it
+  above the cores you were given.
+- Put `/usr/bin/time -v` in front of a command to see its peak memory ("Maximum resident
+  set size").
 
 `pixi run study` runs six steps in order. You can run one at a time with
 `pixi run <step> local/denmark.yaml out/`. To try it on the toy site, use

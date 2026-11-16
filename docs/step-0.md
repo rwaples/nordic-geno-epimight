@@ -14,13 +14,18 @@ Each rule has a tag:
 The kit checks formats only. The **[SAP]** and **[recommended]** rules are yours to get
 right.
 
+The commands below are written for a checkout of the kit. With the Apptainer image,
+write `apptainer run IMAGE` wherever they say `pixi run`, and name your data folders
+with `--bind` (README, "On a server without internet access").
+
 ## The short version
 
 1. Export the pedigree and run it through pedsum (section 1).
 2. Build one trait file per trait for window W1 (section 2).
 3. Write your site file (section 3).
 4. Run the checks in section 4.
-5. Run `pixi run check local/<site>.yaml out/` and fix every finding.
+5. Run `pixi run check local/<site>.yaml out/` and fix every finding. With the image:
+   `apptainer run --bind /path/to/data IMAGE check <site>.yaml out/`.
 6. Write your site note (section 4.3).
 
 ## Rules for every file
@@ -260,7 +265,9 @@ row in the other 18 trait files.
 
 ## 3. The site file
 
-Copy `local/example.yaml` to `local/<site>.yaml`, one per window:
+Copy `local/example.yaml` to `local/<site>.yaml`, one per window. With the image, start
+from `apptainer run IMAGE template > <site>.yaml` instead, in any folder; its `plan:` line
+is `/opt/kit/plan/initial.yaml`, the plan inside the image.
 
 ```yaml
 site: Denmark

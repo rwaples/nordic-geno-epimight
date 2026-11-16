@@ -270,7 +270,7 @@ run_selftest <- function(out, selftest = "kit/selftest") {
   if (dir.exists(out) && length(list.files(out)) > 0) {
     stop(sprintf("%s is not empty; give the self-test a new folder", out), call. = FALSE)
   }
-  dir.create(out, recursive = TRUE, showWarnings = FALSE)
+  create_out_dir(out)
   selftest <- normalizePath(selftest)
   toy_dir <- file.path(out, "toy")
   study <- prepare_toy(file.path(selftest, "toy"), toy_dir)
