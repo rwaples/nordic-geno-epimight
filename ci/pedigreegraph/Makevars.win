@@ -8,7 +8,10 @@ TARGET = x86_64-pc-windows-gnu
 TARGET_DIR = ./rust/target
 LIBDIR = $(TARGET_DIR)/$(TARGET)/release
 STATLIB = $(LIBDIR)/libpedigreegraph.a
-PKG_LIBS = -L$(LIBDIR) -lpedigreegraph -lws2_32 -ladvapi32 -luserenv -lbcrypt -lntdll
+# What `cargo rustc -- --print native-static-libs` lists for this target, less -lR, which
+# R adds itself. std's locks need synchronization (WaitOnAddress).
+PKG_LIBS = -L$(LIBDIR) -lpedigreegraph -lkernel32 -lntdll -luserenv -lws2_32 -ldbghelp \
+  -lsynchronization
 
 all: $(SHLIB)
 
