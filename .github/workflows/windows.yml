@@ -5,7 +5,8 @@ name: windows
 
 on:
   push:
-    branches: [windows-ci]
+    branches: [main, windows-ci]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -34,8 +35,8 @@ jobs:
       - id: install
         continue-on-error: true
         run: pixi install --locked
-      # Both platforms: pedsum's fix for Windows (pedsum bee59ec, unreleased) laid over
-      # the pinned pedsum, so Linux checks the patched pedsum too.
+      # Both platforms: pedsum's fix for Windows (pedsum bee59ec and 4be9465, unreleased),
+      # merged onto v0.17.0's memory.py, laid over the pinned pedsum.
       - id: pedsum
         continue-on-error: true
         shell: bash
@@ -48,8 +49,7 @@ jobs:
           grep -q '_STATM = Path' "$site/pedsum/memory.py"
           pixi run --locked python -I -c "import pedsum.memory"
       # Windows only: pedigreegraph from its pin with ci/pedigreegraph/Makevars.win laid
-      # over it, stamped with the pin's commit so setup keeps it. The bare cargo build
-      # first prints the native libraries the static library needs.
+      # over it, stamped with the pin's commit so setup keeps it.
       - id: pedigreegraph
         if: runner.os == 'Windows'
         continue-on-error: true
@@ -61,9 +61,6 @@ jobs:
           git -C "$pg" checkout --quiet "$commit"
           cp ci/pedigreegraph/Makevars.win "$pg/r/src/"
           printf 'RemoteSha: %s\n' "$commit" >> "$pg/r/DESCRIPTION"
-          pixi run --locked cargo rustc --lib --release --target x86_64-pc-windows-gnu \
-            --manifest-path "$pg/r/src/rust/Cargo.toml" --target-dir "$pg/r/src/rust/target" \
-            -- --print native-static-libs
           pixi run --locked R CMD INSTALL "$pg/r"
       - id: setup
         continue-on-error: true

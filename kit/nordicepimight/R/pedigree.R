@@ -20,7 +20,7 @@ multiple_birth_source <- function(column) {
          description = sprintf("full sibs born at most %d day apart (pedsum --twin-max-days)",
                                TWIN_MAX_DAYS))
   } else {
-    list(args = c("--multiple-birth-col", shell_arg(column)),
+    list(args = c("--multiple-birth-col", shQuote(column)),
          description = sprintf("the pedigree's %s column (pedsum --multiple-birth-col)", column))
   }
 }
@@ -35,8 +35,8 @@ validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) 
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   log <- file.path(dir, "pedsum.log")
   status <- system2(Sys.which("python"),
-                    c("-I", "-m", "pedsum", "validate", "--in", shell_arg(path),
-                      "--out", shell_arg(dir),
+                    c("-I", "-m", "pedsum", "validate", "--in", shQuote(path),
+                      "--out", shQuote(dir),
                       "--birth-year-col", "birth_year", "--birth-date-col", "birth_date",
                       "--max-children-mother", MAX_CHILDREN[["mother"]],
                       "--max-children-father", MAX_CHILDREN[["father"]],
@@ -55,15 +55,18 @@ validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) 
 fread_gz <- function(path, ...) {
   plain <- tempfile(fileext = ".tsv")
   on.exit(unlink(plain))
-  from <- gzfile(path, "rb")
-  to <- file(plain, "wb")
-  repeat {
-    chunk <- readBin(from, raw(), 2^24)
-    if (length(chunk) == 0) break
-    writeBin(chunk, to)
-  }
-  close(from)
-  close(to)
+  # Closed before the unlink, also after an error: Windows can't delete an open file.
+  local({
+    from <- gzfile(path, "rb")
+    on.exit(close(from), add = TRUE)
+    to <- file(plain, "wb")
+    on.exit(close(to), add = TRUE)
+    repeat {
+      chunk <- readBin(from, raw(), 2^24)
+      if (length(chunk) == 0) break
+      writeBin(chunk, to)
+    }
+  })
   data.table::fread(plain, ...)
 }
 

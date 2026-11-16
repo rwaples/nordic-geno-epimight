@@ -13,10 +13,6 @@ TOP_LEVEL_OUTPUTS <- list(
 
 step_dir <- function(out, step) file.path(out, STEP_DIRS[[step]])
 
-# One argument of a system2() command line, quoted for the shell that reads it: sh on
-# Linux and macOS, the C runtime's rules on Windows.
-shell_arg <- function(x) shQuote(x, type = if (.Platform$OS.type == "windows") "cmd" else "sh")
-
 # The Apptainer image sets KIT_IN_IMAGE (container/nordicepimight.def), so messages name
 # the command the user ran: `pixi run` from a checkout, `apptainer run IMAGE` in the image.
 in_image <- function() nzchar(Sys.getenv("KIT_IN_IMAGE"))
