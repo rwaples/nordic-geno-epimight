@@ -32,6 +32,24 @@ jobs:
       - id: install
         continue-on-error: true
         run: pixi install --locked
+      # Windows only: pedigreegraph from its pin with ci/pedigreegraph/Makevars.win laid
+      # over it, stamped with the pin's commit so setup keeps it. The bare cargo build
+      # first prints the native libraries the static library needs.
+      - id: pedigreegraph
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: bash
+        run: |
+          commit=$(sed -n '/^pedigreegraph:/,/^[a-z]/s/^  commit: //p' kit/nordicepimight/inst/pins.yaml)
+          pg="$(cygpath -m "$RUNNER_TEMP")/pedigree-graph"
+          git clone --quiet https://github.com/rwaples/pedigree-graph "$pg"
+          git -C "$pg" checkout --quiet "$commit"
+          cp ci/pedigreegraph/Makevars.win "$pg/r/src/"
+          printf 'RemoteSha: %s\n' "$commit" >> "$pg/r/DESCRIPTION"
+          pixi run --locked cargo rustc --lib --release --target x86_64-pc-windows-gnu \
+            --manifest-path "$pg/r/src/rust/Cargo.toml" --target-dir "$pg/r/src/rust/target" \
+            -- --print native-static-libs
+          pixi run --locked R CMD INSTALL "$pg/r"
       - id: setup
         continue-on-error: true
         run: pixi run --locked setup
@@ -51,15 +69,16 @@ jobs:
       - name: Outcome
         if: always()
         shell: bash
+        # A skipped step (pedigreegraph on Linux) counts as passed.
         run: |
           status=0
-          {
-            echo "| step | ${{ matrix.os }} |"
-            echo "|---|---|"
-            for pair in "install=${{ steps.install.outcome }}" "setup=${{ steps.setup.outcome }}" \
-                        "test=${{ steps.test.outcome }}" "selftest=${{ steps.selftest.outcome }}"; do
-              echo "| ${pair%%=*} | ${pair#*=} |"
-              [ "${pair#*=}" = success ] || status=1
-            done
-          } | tee -a "$GITHUB_STEP_SUMMARY"
+          table="| step | ${{ matrix.os }} |"$'\n'"|---|---|"
+          for pair in "install=${{ steps.install.outcome }}" \
+                      "pedigreegraph=${{ steps.pedigreegraph.outcome }}" \
+                      "setup=${{ steps.setup.outcome }}" "test=${{ steps.test.outcome }}" \
+                      "selftest=${{ steps.selftest.outcome }}"; do
+            table+=$'\n'"| ${pair%%=*} | ${pair#*=} |"
+            case "${pair#*=}" in success | skipped) ;; *) status=1 ;; esac
+          done
+          echo "$table" | tee -a "$GITHUB_STEP_SUMMARY"
           exit $status

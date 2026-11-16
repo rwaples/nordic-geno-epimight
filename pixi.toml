@@ -58,3 +58,7 @@ study = { cmd = "Rscript -e 'nordicepimight::main(\"study\")'", description = "S
 selftest = { cmd = "Rscript -e 'nordicepimight::main(\"selftest\")'", description = "The kit on its toy study, against independent values (pixi run selftest OUT/)" }
 test = { cmd = "Rscript -e 'testthat::test_local(\"kit/nordicepimight\", stop_on_failure = TRUE)'", description = "Unit tests" }
 lint = { cmd = "Rscript -e 'l <- c(lintr::lint_package(\"kit/nordicepimight\"), lintr::lint(\"kit/setup.R\"), lintr::lint_dir(\"kit/selftest/build\")); print(l); quit(status = length(l) > 0)'", description = "Lint the package and scripts" }
+
+# R on Windows links with MinGW gcc, so pedigreegraph's Rust crate builds for the GNU target.
+[target.win-64.dependencies]
+rust-std-x86_64-pc-windows-gnu = "*"

@@ -292,6 +292,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-waldo-0.6.2-r45hc72bb7e_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-withr-3.0.3-r45hc72bb7e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/r-xmlparsedata-1.0.5-r45hc72bb7e_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/rust-std-x86_64-pc-windows-gnu-1.100.0-win_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.100.0-h5a2a77e_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/vswhere-3.1.7-h40126e0_1.conda
@@ -3546,6 +3547,19 @@ packages:
   run_exports: {}
   size: 28840
   timestamp: 1757451925197
+- conda: https://conda.anaconda.org/conda-forge/noarch/rust-std-x86_64-pc-windows-gnu-1.100.0-win_0.conda
+  sha256: 3c7df910b9786a2c80b4dd3e49ee56f0d28090a3a2b1f48dfaa889392101e38d
+  md5: 4c459822e15b45c56ef5f08796dc860f
+  depends:
+  - __win
+  constrains:
+  - rust >=1.100.0,<1.100.1.0a0
+  license: MIT
+  license_family: MIT
+  purls: []
+  run_exports: {}
+  size: 37844159
+  timestamp: 1794561082971
 - conda: https://conda.anaconda.org/conda-forge/noarch/rust-std-x86_64-pc-windows-msvc-1.100.0-h5a2a77e_0.conda
   sha256: d8f6f76460097325abf0987cb4d551b269ea4fc44cdc684c767a3c9a0b8911aa
   md5: 9bd59959b849313c1305debc88a11361
