@@ -20,7 +20,7 @@ multiple_birth_source <- function(column) {
          description = sprintf("full sibs born at most %d day apart (pedsum --twin-max-days)",
                                TWIN_MAX_DAYS))
   } else {
-    list(args = c("--multiple-birth-col", shQuote(column)),
+    list(args = c("--multiple-birth-col", shell_arg(column)),
          description = sprintf("the pedigree's %s column (pedsum --multiple-birth-col)", column))
   }
 }
@@ -35,8 +35,8 @@ validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) 
   dir.create(dir, showWarnings = FALSE, recursive = TRUE)
   log <- file.path(dir, "pedsum.log")
   status <- system2(Sys.which("python"),
-                    c("-I", "-m", "pedsum", "validate", "--in", shQuote(path),
-                      "--out", shQuote(dir),
+                    c("-I", "-m", "pedsum", "validate", "--in", shell_arg(path),
+                      "--out", shell_arg(dir),
                       "--birth-year-col", "birth_year", "--birth-date-col", "birth_date",
                       "--max-children-mother", MAX_CHILDREN[["mother"]],
                       "--max-children-father", MAX_CHILDREN[["father"]],
@@ -44,10 +44,27 @@ validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) 
                     stdout = log, stderr = log)
   written <- file.path(dir, "validate.tsv.gz")
   pedigree <- if (file.exists(written)) {
-    data.table::fread(cmd = paste("gzip -dc", shQuote(written)), sep = "\t",
-                      colClasses = "character", na.strings = "", showProgress = FALSE)
+    fread_gz(written, sep = "\t", colClasses = "character", na.strings = "",
+             showProgress = FALSE)
   }
   list(pedigree = pedigree, findings = read_pedsum_findings(dir, status, path))
+}
+
+# fread on a .gz file. fread itself needs R.utils for one, and Windows has no gzip to pipe
+# through, so base R decompresses it to a temporary file first.
+fread_gz <- function(path, ...) {
+  plain <- tempfile(fileext = ".tsv")
+  on.exit(unlink(plain))
+  from <- gzfile(path, "rb")
+  to <- file(plain, "wb")
+  repeat {
+    chunk <- readBin(from, raw(), 2^24)
+    if (length(chunk) == 0) break
+    writeBin(chunk, to)
+  }
+  close(from)
+  close(to)
+  data.table::fread(plain, ...)
 }
 
 # pedsum exits 0 when it finds nothing and 1 when it only reports findings; any other exit
