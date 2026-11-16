@@ -56,9 +56,12 @@ input_files <- function(study_path) {
   paths[file.exists(paths)]
 }
 
-# In the image, a missing file is most often a folder not bound with --bind.
+# In the image, a missing file is most often a folder not bound with --bind. A trait with
+# no file given is a plan error, not a missing file.
 missing_file_hint <- function(findings, image = in_image()) {
-  missing <- any(findings$code %in% c("file_missing", "trait_file_missing"))
+  missing <- any(findings$code == "file_missing" |
+                   (findings$code == "trait_file_missing" &
+                      findings$message == "trait file not found"))
   if (image && missing) paste0("check: ", BIND_HINT, "\n") else character()
 }
 
@@ -100,8 +103,8 @@ pedigree_coverage <- function(pedigree, population) {
            keyby = .(birth_decade = data.table::year(birth_date) %/% 10L * 10L)]
 }
 
-run_check <- function(study_path, out, dir) {
-  result <- check_inputs(study_path, dir)
+run_check <- function(study_path, out, dir, validate = validate_pedigree) {
+  result <- check_inputs(study_path, dir, validate)
   findings <- result$findings
   write_findings(findings, file.path(dir, "findings.tsv"))
   files <- input_files(study_path)

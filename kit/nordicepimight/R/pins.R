@@ -30,7 +30,8 @@ pin_mismatches <- function(installed = installed_sources(), pinned = pins()) {
     if (identical(have$commit, want$commit) && identical(have$version, want$version)) {
       return(NULL)
     }
-    sprintf("%s: installed %s (%s), pinned %s (%s); run `pixi run setup`",
-            pkg, have$version, have$commit, want$version, want$commit)
+    sprintf("%s: installed %s (%s), pinned %s (%s); %s",
+            pkg, have$version, have$commit, want$version, want$commit,
+            if (in_image()) "rebuild the image" else "run `pixi run setup`")
   }))
 }

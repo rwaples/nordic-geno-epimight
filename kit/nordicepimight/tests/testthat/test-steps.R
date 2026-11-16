@@ -53,3 +53,33 @@ test_that("later steps stop when the kit is not the one check ran with", {
   yaml::write_yaml(recorded, record)
   expect_error(run_step("cohort", run_cohort, c(path, out)), "not recorded")
 })
+
+test_that("a later step names inputs that are gone instead of calling them changed", {
+  path <- write_fixture()
+  out <- tempfile("out")
+  capture.output(run_step("check", run_check, c(path, out)))
+  unlink(file.path(dirname(path), "plan", "analyses.tsv"))
+  expect_error(run_step("cohort", run_cohort, c(path, out)), "not found now:\\s+\\S*analyses\\.tsv")
+})
+
+test_that("the image's template points at the plan in the image", {
+  site <- site_template(test_path("../../../../local/example.yaml"))
+  expect_equal(yaml::yaml.load(paste(site, collapse = "\n"))$plan,
+               "/opt/kit/plan/initial.yaml")
+  plan_line <- grep("^plan:", site, value = TRUE)
+  original <- grep("^plan:", readLines(test_path("../../../../local/example.yaml")), value = TRUE)
+  expect_equal(regexpr("#", plan_line), regexpr("#", original))
+  expect_match(site[1], "--bind")
+
+  example <- tempfile(fileext = ".yaml")
+  writeLines(c("# checkout only", "site: x", "plan: ../plan/complete.yaml # tight"), example)
+  site <- site_template(example)
+  expect_equal(site[-(1:2)], c("site: x", "plan: /opt/kit/plan/complete.yaml # tight"))
+  writeLines("site: x", example)
+  expect_error(site_template(example), "no `plan: ../plan/...` line")
+})
+
+test_that("the image lists its own commands", {
+  expect_false("template" %in% kit_commands(image = FALSE))
+  expect_contains(kit_commands(image = TRUE), c("study", "check", "template", "pedsum", "help"))
+})

@@ -51,6 +51,27 @@ step_functions <- function() {
        report = run_report, export = run_export)
 }
 
+# The commands a user can type. The image's runscript adds template, pedsum and help.
+kit_commands <- function(image = in_image()) {
+  c("study", STEPS, "selftest", if (image) c("template", "pedsum", "help"))
+}
+
+# local/example.yaml as a site file for the image: its checkout-only header comments
+# dropped and its plan path pointing into the image, keeping the comment column.
+site_template <- function(example) {
+  lines <- readLines(example)
+  body <- lines[cumsum(!startsWith(lines, "#")) > 0]
+  m <- regmatches(body, regexec("^plan: \\.\\./plan/(\\S+)( *)(.*)$", body))
+  i <- which(lengths(m) > 0)
+  if (length(i) != 1) stop(sprintf("%s has no `plan: ../plan/...` line", example), call. = FALSE)
+  plan <- m[[i]]
+  # /opt/kit/plan/ is 6 characters longer than ../plan/; at least one space before a comment.
+  pad <- if (plan[4] == "") "" else strrep(" ", max(1, nchar(plan[3]) - 6))
+  body[i] <- paste0("plan: /opt/kit/plan/", plan[2], pad, plan[4])
+  c("# Site file for the nordic-geno-epimight image. Name with --bind every folder below",
+    "# that is not under your home folder, the current folder or /tmp.", body)
+}
+
 # `pixi run <command> ...`: a step, every step in order (study), or the self-test.
 main <- function(command, args = commandArgs(trailingOnly = TRUE)) {
   if (command == "selftest") {
@@ -60,9 +81,12 @@ main <- function(command, args = commandArgs(trailingOnly = TRUE)) {
   if (command == "study") {
     return(invisible(run_study(args)))
   }
+  if (command == "template") {
+    return(invisible(cat(site_template("local/example.yaml"), sep = "\n")))
+  }
   if (!(command %in% STEPS)) {
-    stop(sprintf("unknown command %s; the commands are study, %s and selftest", command,
-                 paste(STEPS, collapse = ", ")), call. = FALSE)
+    stop(sprintf("unknown command %s; the commands are %s", command,
+                 paste(kit_commands(), collapse = ", ")), call. = FALSE)
   }
   run_step(command, step_functions()[[command]], args)
 }
@@ -104,6 +128,12 @@ run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
   }
   if (step != "check" && file.exists(file.path(step_dir(out, "check"), "DONE"))) {
     changed <- changed_inputs(study_path, out)
+    gone <- changed[!file.exists(changed)]
+    if (length(gone) > 0) {
+      stop(paste(sprintf("these inputs `%s check` read in %s are not found now:\n  %s",
+                         kit_command(), out, paste(gone, collapse = "\n  ")),
+                 if (in_image()) paste0("\n", BIND_HINT)), call. = FALSE)
+    }
     if (length(changed) > 0) {
       stop(sprintf("these inputs differ from what `%s check` saw in %s; rerun it:\n  %s",
                    kit_command(), out, paste(changed, collapse = "\n  ")), call. = FALSE)

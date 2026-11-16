@@ -97,8 +97,8 @@ this repository.
    ```
 
 Apptainer shows the image your home folder, the folder you run it from and `/tmp`. Name
-every other folder your site file uses with `--bind`; if you forget one, the check step
-stops with `file not found` and says so. `apptainer run-help` on the image
+every other folder your site file uses with `--bind`. If you forget one, the kit says a
+file or folder is not found and reminds you of `--bind`. `apptainer run-help` on the image
 lists the commands, and `/opt/kit` in the image holds this README and `docs/`. Each
 run's `run.yaml` records the image's version and commit under `kit`.
 

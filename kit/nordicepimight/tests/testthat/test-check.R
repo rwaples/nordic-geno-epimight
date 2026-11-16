@@ -450,7 +450,7 @@ test_that("the check step prints a missing plan as a stop instead of failing", {
     s
   })
   out <- tempfile("out")
-  printed <- capture.output(ok <- run_check(path, out, begin_step(out, "check")))
+  printed <- capture.output(ok <- run_check(path, out, begin_step(out, "check"), skip_pedsum))
   expect_false(ok)
   expect_match(printed, "plan file not found", all = FALSE)
 })
@@ -458,7 +458,11 @@ test_that("the check step prints a missing plan as a stop instead of failing", {
 test_that("in the image, a missing file stop points at --bind", {
   missing <- finding("file_missing", "plan file not found")
   other <- finding("trait_duplicate_id", "id listed twice")
+  not_given <- finding("trait_file_missing", "no trait file given")
+  not_found <- finding("trait_file_missing", "trait file not found")
   expect_match(missing_file_hint(missing, image = TRUE), "--bind")
+  expect_match(missing_file_hint(not_found, image = TRUE), "--bind")
+  expect_length(missing_file_hint(not_given, image = TRUE), 0)
   expect_length(missing_file_hint(missing, image = FALSE), 0)
   expect_length(missing_file_hint(other, image = TRUE), 0)
   expect_equal(kit_command(image = TRUE), "apptainer run IMAGE")

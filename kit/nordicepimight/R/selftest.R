@@ -278,7 +278,7 @@ run_selftest <- function(out, selftest = "kit/selftest") {
   status <- system2(Sys.which("Rscript"), c("-e", shQuote("nordicepimight::main(\"study\")"),
                                             shQuote(study), shQuote(run_dir)))
   items <- item("toy: every step runs", if (status == 0) "PASS" else "FAIL",
-                sprintf("pixi run study exited %d", status))
+                sprintf("the study run exited %d", status))
   if (status == 0) {
     tables <- readRDS(file.path(step_dir(run_dir, "tables"), "tables.rds"))
     analyses <- readRDS(file.path(step_dir(run_dir, "check"), "inputs.rds"))$analyses

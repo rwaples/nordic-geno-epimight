@@ -51,11 +51,9 @@ From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0
             usage
             ;;
         template)
-            # local/example.yaml with the plan inside the image and without its
-            # checkout-only header.
-            echo "# Site file for the nordic-geno-epimight image. Name every folder below with --bind."
-            sed -e '1,/^[^#]/{/^#/d}' -e 's#^plan: \.\./plan/\([^ ]*\)      #plan: /opt/kit/plan/\1#' \
-                /opt/kit/local/example.yaml
+            # The template reads local/example.yaml from the working folder.
+            cd /opt/kit
+            exec Rscript -e 'nordicepimight::main("template")'
             ;;
         pedsum)
             # -I keeps the host's PYTHONPATH and user site-packages out, as the kit does.
