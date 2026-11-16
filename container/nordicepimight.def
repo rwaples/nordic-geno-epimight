@@ -26,6 +26,8 @@ From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0
     export PATH=/opt/kit/.pixi/envs/default/bin:$PATH
     export CONDA_PREFIX=/opt/kit/.pixi/envs/default
     export LC_ALL=C.UTF-8
+    # The kit's messages name `apptainer run IMAGE` and point at --bind when this is set.
+    export KIT_IN_IMAGE=1
     # Apptainer passes the host's variables and home folder in. Keep the host's R
     # libraries and startup files out of the run. Each variable is set, not unset:
     # Apptainer puts the host's value back for any variable left unset here.
@@ -47,6 +49,13 @@ From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0
     case "$command" in
         help | -h | --help)
             usage
+            ;;
+        template)
+            # local/example.yaml with the plan inside the image and without its
+            # checkout-only header.
+            echo "# Site file for the nordic-geno-epimight image. Name every folder below with --bind."
+            sed -e '1,/^[^#]/{/^#/d}' -e 's#^plan: \.\./plan/\([^ ]*\)      #plan: /opt/kit/plan/\1#' \
+                /opt/kit/local/example.yaml
             ;;
         pedsum)
             # -I keeps the host's PYTHONPATH and user site-packages out, as the kit does.
@@ -86,8 +95,9 @@ From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0
     apptainer run IMAGE STEP SITE.yaml OUT/      one step: check, cohort, epimight, tables,
                                                  report or export
     apptainer run IMAGE selftest OUT/            the kit on its toy study
+    apptainer run IMAGE template > SITE.yaml     a site file to fill in
     apptainer run IMAGE pedsum ARGS...           pedsum, to check or repair a pedigree
 
-    The shared plan is in the image: write `plan: /opt/kit/plan/initial.yaml` in the site
-    file. Bind the folders your site file names with --bind. The README and docs are under
+    The shared plan is in the image, at /opt/kit/plan/initial.yaml; the template names it.
+    Bind the folders your site file names with --bind. The README and docs are under
     /opt/kit.

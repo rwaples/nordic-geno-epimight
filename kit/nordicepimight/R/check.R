@@ -50,10 +50,16 @@ check_inputs <- function(study_path, dir, validate = validate_pedigree) {
 input_files <- function(study_path) {
   study <- read_study(study_path)$study
   traits <- if (!is.null(study$traits)) read_traits(study$traits, study$data_folder)$table
-  trait_files <- unique(stats::na.omit(traits$file_path))
+  trait_files <- unique(stats::na.omit(as.character(traits$file_path)))
   paths <- c(site = study$path, plan_files(study), pedigree = study$pedigree_path,
              stats::setNames(trait_files, make.unique(basename(trait_files))))
   paths[file.exists(paths)]
+}
+
+# In the image, a missing file is most often a folder not bound with --bind.
+missing_file_hint <- function(findings, image = in_image()) {
+  missing <- any(findings$code %in% c("file_missing", "trait_file_missing"))
+  if (image && missing) paste0("check: ", BIND_HINT, "\n") else character()
 }
 
 plan_files <- function(study) {
@@ -61,8 +67,12 @@ plan_files <- function(study) {
     relative_windows = study$relative_windows)
 }
 
-# One checksum for the whole plan, the same at every site that runs the same plan.
+# One checksum for the whole plan, the same at every site that runs the same plan; NULL
+# when the plan file was not found.
 plan_checksum <- function(study) {
+  if (is.null(study$plan_path)) {
+    return(NULL)
+  }
   files <- plan_files(study)
   digest_file <- tempfile()
   on.exit(unlink(digest_file))
@@ -98,7 +108,7 @@ run_check <- function(study_path, out, dir) {
   yaml::write_yaml(list(
     step = "check",
     site = result$study$site,
-    plan_checksum = if (!is.null(result$study)) plan_checksum(result$study),
+    plan_checksum = plan_checksum(result$study),
     finished = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
     stopped = has_stop(findings),
     stops = sum(findings$severity == "STOP"),
@@ -112,6 +122,7 @@ run_check <- function(study_path, out, dir) {
   if (has_stop(findings)) {
     cat(sprintf("check: %d stop(s); fix them and rerun. Details in %s\n",
                 sum(findings$severity == "STOP"), file.path(dir, "findings.tsv")))
+    cat(missing_file_hint(findings))
     return(FALSE)
   }
   saveRDS(result$inputs, file.path(dir, "inputs.rds"))

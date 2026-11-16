@@ -69,7 +69,8 @@ read_traits <- function(path, data) {
     flag(is.na(t$file), "trait_file_missing", "no trait file given", path, t$trait)
   )
   t[, file_path := ifelse(is.na(file) | is.null(data), NA_character_, resolve_path(data, file))]
-  f <- c(f, list(flag(!is.na(t$file) & !file.exists(t$file_path), "trait_file_missing",
+  # Without a data folder there is no path to look for; the site file's own stop says why.
+  f <- c(f, list(flag(!is.na(t$file_path) & !file.exists(t$file_path), "trait_file_missing",
                       "trait file not found", path, t$file_path)))
   t[!is.na(file_path) & file.exists(file_path), file_path := normalizePath(file_path)]
 

@@ -84,10 +84,11 @@ this repository.
    template:
 
    ```sh
-   apptainer exec nordic-geno-epimight-<version>.sif cat /opt/kit/local/example.yaml > denmark.yaml
+   apptainer run nordic-geno-epimight-<version>.sif template > denmark.yaml
    ```
 
-   The plan is inside the image, so set `plan: /opt/kit/plan/initial.yaml`.
+   The plan is inside the image, and the template already names it
+   (`plan: /opt/kit/plan/initial.yaml`). Use absolute paths for your data.
 4. Run the kit. Wherever this README says `pixi run`, write `apptainer run` and the
    image:
 
@@ -96,7 +97,8 @@ this repository.
    ```
 
 Apptainer shows the image your home folder, the folder you run it from and `/tmp`. Name
-every other folder your site file uses with `--bind`. `apptainer run-help` on the image
+every other folder your site file uses with `--bind`; if you forget one, the check step
+stops with `file not found` and says so. `apptainer run-help` on the image
 lists the commands, and `/opt/kit` in the image holds this README and `docs/`. Each
 run's `run.yaml` records the image's version and commit under `kit`.
 

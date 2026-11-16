@@ -437,6 +437,32 @@ test_that("a missing data folder, plan or pedigree is file_missing", {
     })
     expect_contains(codes(result, "STOP"), "file_missing")
   }
+  result <- check_fixture(function(s) {
+    s$site$data_folder <- "nope"
+    s
+  })
+  expect_false("trait_file_missing" %in% codes(result))
+})
+
+test_that("the check step prints a missing plan as a stop instead of failing", {
+  path <- write_fixture(function(s) {
+    s$site$plan <- "nope"
+    s
+  })
+  out <- tempfile("out")
+  printed <- capture.output(ok <- run_check(path, out, begin_step(out, "check")))
+  expect_false(ok)
+  expect_match(printed, "plan file not found", all = FALSE)
+})
+
+test_that("in the image, a missing file stop points at --bind", {
+  missing <- finding("file_missing", "plan file not found")
+  other <- finding("trait_duplicate_id", "id listed twice")
+  expect_match(missing_file_hint(missing, image = TRUE), "--bind")
+  expect_length(missing_file_hint(missing, image = FALSE), 0)
+  expect_length(missing_file_hint(other, image = TRUE), 0)
+  expect_equal(kit_command(image = TRUE), "apptainer run IMAGE")
+  expect_equal(kit_command(image = FALSE), "pixi run")
 })
 
 test_that("absolute paths are used as given", {

@@ -13,11 +13,24 @@ TOP_LEVEL_OUTPUTS <- list(
 
 step_dir <- function(out, step) file.path(out, STEP_DIRS[[step]])
 
+# The Apptainer image sets KIT_IN_IMAGE (container/nordicepimight.def), so messages name
+# the command the user ran: `pixi run` from a checkout, `apptainer run IMAGE` in the image.
+in_image <- function() nzchar(Sys.getenv("KIT_IN_IMAGE"))
+kit_command <- function(image = in_image()) if (image) "apptainer run IMAGE" else "pixi run"
+
+# Inside the image the kit sees only the home folder, the current folder, /tmp and the
+# folders named with --bind, so a file that exists on the server can look missing.
+BIND_HINT <- paste(
+  "The image sees only your home folder, the current folder, /tmp and the folders you",
+  "name with --bind. If the file exists, bind its folder:",
+  "apptainer run --bind /path/to/folder IMAGE ..."
+)
+
 begin_step <- function(out, step) {
   i <- match(step, STEPS)
   if (i > 1 && !file.exists(file.path(step_dir(out, STEPS[i - 1]), "DONE"))) {
-    stop(sprintf("%s has not finished in %s; run `pixi run %s` first", STEPS[i - 1], out,
-                 STEPS[i - 1]), call. = FALSE)
+    stop(sprintf("%s has not finished in %s; run `%s %s` first", STEPS[i - 1], out,
+                 kit_command(), STEPS[i - 1]), call. = FALSE)
   }
   for (later in STEPS[i:length(STEPS)]) {
     unlink(step_dir(out, later), recursive = TRUE)
@@ -41,13 +54,16 @@ step_functions <- function() {
 # `pixi run <command> ...`: a step, every step in order (study), or the self-test.
 main <- function(command, args = commandArgs(trailingOnly = TRUE)) {
   if (command == "selftest") {
-    if (length(args) != 1) stop("usage: pixi run selftest OUT/", call. = FALSE)
+    if (length(args) != 1) stop(sprintf("usage: %s selftest OUT/", kit_command()), call. = FALSE)
     quit(status = if (run_selftest(args[1])) 0 else 1, save = "no")
   }
   if (command == "study") {
     return(invisible(run_study(args)))
   }
-  if (!(command %in% STEPS)) stop(sprintf("unknown step %s", command), call. = FALSE)
+  if (!(command %in% STEPS)) {
+    stop(sprintf("unknown command %s; the commands are study, %s and selftest", command,
+                 paste(STEPS, collapse = ", ")), call. = FALSE)
+  }
   run_step(command, step_functions()[[command]], args)
 }
 
@@ -68,8 +84,8 @@ stop_if_kit_changed <- function(out, now = kit_source()) {
     sprintf("%s, commit %s", kit$version %||% "not recorded", kit$commit %||% "not recorded")
   }
   if (label(was) != label(now)) {
-    stop(sprintf("`pixi run check` ran in %s with another kit (%s); this one is %s. Rerun it",
-                 out, label(was), label(now)), call. = FALSE)
+    stop(sprintf("`%s check` ran in %s with another kit (%s); this one is %s. Rerun it",
+                 kit_command(), out, label(was), label(now)), call. = FALSE)
   }
 }
 
@@ -78,16 +94,19 @@ stop_if_kit_changed <- function(out, now = kit_source()) {
 # returns TRUE. Exits 1 otherwise.
 run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
   if (length(args) != 2) {
-    stop(sprintf("usage: pixi run %s SITE.yaml OUT/", step), call. = FALSE)
+    stop(sprintf("usage: %s %s SITE.yaml OUT/", kit_command(), step), call. = FALSE)
   }
   study_path <- args[1]
   out <- sub("/+$", "", args[2])
-  if (!file.exists(study_path)) stop(sprintf("%s not found", study_path), call. = FALSE)
+  if (!file.exists(study_path)) {
+    stop(paste(sprintf("%s not found.", study_path), if (in_image()) BIND_HINT),
+         call. = FALSE)
+  }
   if (step != "check" && file.exists(file.path(step_dir(out, "check"), "DONE"))) {
     changed <- changed_inputs(study_path, out)
     if (length(changed) > 0) {
-      stop(sprintf("these inputs differ from what `pixi run check` saw in %s; rerun it:\n  %s",
-                   out, paste(changed, collapse = "\n  ")), call. = FALSE)
+      stop(sprintf("these inputs differ from what `%s check` saw in %s; rerun it:\n  %s",
+                   kit_command(), out, paste(changed, collapse = "\n  ")), call. = FALSE)
     }
     stop_if_kit_changed(out)
   }
