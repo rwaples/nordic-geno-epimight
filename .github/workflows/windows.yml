@@ -1,0 +1,65 @@
+# Runs the pixi route (install, setup, unit tests, self-test) on Windows, with Linux on the
+# same steps as a control. Every step runs even after one fails, so one run lists every
+# failure; the last step fails the job if any did.
+name: windows
+
+on:
+  push:
+    branches: [windows-ci]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    env:
+      # remotes::install_github in setup reads it, which lifts GitHub's rate limit.
+      GITHUB_PAT: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: prefix-dev/setup-pixi@v0.11.3
+        with:
+          pixi-version: v0.84.1
+          run-install: false
+      - id: install
+        continue-on-error: true
+        run: pixi install --locked
+      - id: setup
+        continue-on-error: true
+        run: pixi run --locked setup
+      - id: test
+        continue-on-error: true
+        run: pixi run --locked test
+      - id: selftest
+        continue-on-error: true
+        run: pixi run --locked selftest selftest-out
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: selftest-out-${{ matrix.os }}
+          path: selftest-out
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Outcome
+        if: always()
+        shell: bash
+        run: |
+          status=0
+          {
+            echo "| step | ${{ matrix.os }} |"
+            echo "|---|---|"
+            for pair in "install=${{ steps.install.outcome }}" "setup=${{ steps.setup.outcome }}" \
+                        "test=${{ steps.test.outcome }}" "selftest=${{ steps.selftest.outcome }}"; do
+              echo "| ${pair%%=*} | ${pair#*=} |"
+              [ "${pair#*=}" = success ] || status=1
+            done
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          exit $status
