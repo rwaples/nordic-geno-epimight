@@ -40,11 +40,12 @@ jobs:
         with:
           pixi-version: v0.84.1
           run-install: false
-      - name: Rust with the MinGW host
+      # The README's version: linux-64's locked rust (pixi.lock).
+      - id: rust
         if: runner.os == 'Windows'
         run: |
-          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal
-          rustup default stable-x86_64-pc-windows-gnu
+          rustup toolchain install 1.99.1-x86_64-pc-windows-gnu --profile minimal
+          rustup default 1.99.1-x86_64-pc-windows-gnu
       - id: install
         continue-on-error: true
         run: pixi install --locked
@@ -69,7 +70,8 @@ jobs:
           pins=kit/nordicepimight/inst/pins.yaml
           sed -i "/^pedigreegraph:/,/^[a-z]/s/^  commit: .*/  commit: $PG_WINDOWS_COMMIT/" "$pins"
           grep -q "^  commit: $PG_WINDOWS_COMMIT" "$pins"
-      - name: Cut PATH down to a clean machine's
+      - id: path
+        name: Cut PATH down to a clean machine's
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
@@ -89,7 +91,7 @@ jobs:
           # Windows' own bash.exe, the WSL launcher, is on every machine and isn't a Unix shell.
           foreach ($tool in 'sh', 'bash', 'gcc', 'make', 'link', 'Rscript') {
             $found = Get-Command $tool -ErrorAction SilentlyContinue |
-              Where-Object { -not $_.Source.StartsWith($env:SystemRoot) }
+              Where-Object { $_.Source -ne "$env:SystemRoot\System32\bash.exe" }
             if ($found) { throw "$tool is on PATH: $($found.Source)" }
           }
           $host_line = rustc -vV | Select-String '^host: '
@@ -119,6 +121,7 @@ jobs:
         # A skipped step (the Windows-only ones on Linux) counts as passed.
         run: |
           $steps = [ordered]@{
+            rust = '${{ steps.rust.outcome }}'; path = '${{ steps.path.outcome }}'
             install = '${{ steps.install.outcome }}'; pedsum = '${{ steps.pedsum.outcome }}'
             pin = '${{ steps.pin.outcome }}'; clean = '${{ steps.clean.outcome }}'
             setup = '${{ steps.setup.outcome }}'; test = '${{ steps.test.outcome }}'

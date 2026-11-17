@@ -134,7 +134,9 @@ run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
     stop(sprintf("usage: %s %s SITE.yaml OUT/", kit_command(), step), call. = FALSE)
   }
   study_path <- args[1]
-  out <- sub("/+$", "", args[2])
+  # Trailing separators off, \ too: on Windows a quoted argument ending in \ escapes its
+  # closing quote when the folder is handed to pedsum.
+  out <- sub("[/\\\\]+$", "", args[2])
   if (!file.exists(study_path)) {
     stop(paste(sprintf("%s not found.", study_path), if (in_image()) BIND_HINT),
          call. = FALSE)

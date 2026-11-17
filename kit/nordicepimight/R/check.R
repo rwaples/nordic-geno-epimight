@@ -79,7 +79,12 @@ plan_checksum <- function(study) {
   files <- plan_files(study)
   digest_file <- tempfile()
   on.exit(unlink(digest_file))
-  writeLines(paste(names(files), unname(tools::md5sum(files))), digest_file)
+  # Binary, so Windows writes the same \n line ends as Linux, not \r\n.
+  local({
+    con <- file(digest_file, "wb")
+    on.exit(close(con))
+    writeLines(paste(names(files), unname(tools::md5sum(files))), con)
+  })
   unname(tools::md5sum(digest_file))
 }
 

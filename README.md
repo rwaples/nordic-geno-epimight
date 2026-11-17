@@ -71,14 +71,17 @@ R. In PowerShell:
 ```powershell
 $env:PIXI_VERSION = "v0.84.1"; irm -useb https://pixi.sh/install.ps1 | iex
 Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
-& $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --profile minimal
+& $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain 1.99.1 --profile minimal
 ```
+
+Rust 1.99.1 is the version the Linux environment locks, so every site compiles
+pedigreegraph with the same Rust.
 
 Open a new PowerShell window, so `PATH` has both installers' folders, then run the
 `git clone`, `pixi install`, `setup` and `selftest` commands above. If you already have
 rustup with its default MSVC host and no Visual Studio Build Tools, switch it with
-`rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal` and
-`rustup default stable-x86_64-pc-windows-gnu`. During `setup`, tar may report that it
+`rustup toolchain install 1.99.1-x86_64-pc-windows-gnu --profile minimal` and
+`rustup default 1.99.1-x86_64-pc-windows-gnu`. During `setup`, tar may report that it
 can't create `CLAUDE.md`: that file is a link in pedigreegraph's repository, which
 Windows can't create without Developer Mode, and the build doesn't use it.
 

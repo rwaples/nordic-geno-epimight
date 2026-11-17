@@ -1,0 +1,4 @@
+# LF everywhere, also in a Windows checkout: the plan checksum hashes the plan files'
+# bytes, so CRLF plan files would give a Windows site a different checksum for the same
+# plan, and ci/pedsum/memory.patch must match pedsum's LF source.
+* text=auto eol=lf
