@@ -30,8 +30,23 @@ pixi run Rscript kit/selftest/build/make_toy.R /tmp/old_pedigree.tsv /tmp/old_po
 
 `python-v0` is a local branch, not on GitHub.
 
-The self-test also checks `out/6_export/`: it holds only the shareable files, no count
-from 1 to 5 is left in it, and its `run.yaml` names no paths.
+## What `pixi run selftest OUT/` checks
+
+It copies the toy into `OUT/`, turning ids into text and renaming three probands `001`,
+`1` and `1.0`, and adds one analysis, `h2_unestimable`, that has no affected relative.
+It runs every step in `OUT/run/` and checks:
+
+- the h², rg and CIF estimates against fitACE_epimight's independent Python values in
+  `expected/h2.tsv`, `expected/rg.tsv` and `expected/cif.tsv` (EPIMIGHT's population CIF
+  SE has no Python reference and is a SKIP);
+- that `001`, `1` and `1.0` stay three people;
+- that `h2_unestimable` comes out as NA rows with a note;
+- that `OUT/run/6_export/` holds only the shareable files, no count from 1 to
+  `export_min_count`, and a `run.yaml` without paths;
+- that the cohort-table cases below match `expected/cohort_cases.tsv.gz`;
+- that broken copies of the inputs each stop the check step with their own code.
+
+`OUT/` must be new or empty.
 
 ## The cohort-table cases
 

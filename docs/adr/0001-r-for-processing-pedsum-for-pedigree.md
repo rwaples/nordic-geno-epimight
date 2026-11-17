@@ -1,6 +1,7 @@
 # R does the data processing; pedsum checks the pedigree
 
-Status: accepted (2026-10-14)
+Status: accepted (2026-10-14); refined by ADR 0005, under which pedsum only checks the
+pedigree and the site repairs it before the run
 
 ## Context
 

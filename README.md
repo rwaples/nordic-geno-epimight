@@ -14,7 +14,7 @@ The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects 
 | 3 | `epimight` | Runs EPIMIGHT once for each estimate the analyses need |
 | 4 | `tables` | Collects and synthesizes the EPIMIGHT output |
 | 5 | `report` | Prepares plots of the results and summaries |
-| 6 | `export` | Prepares the data for export by suppressing PII. |
+| 6 | `export` | Writes the folder to share, with small counts suppressed |
 
 Each step relies on the output of previous step(s). Rerunning a step deletes the output of
 the steps after it. If an input file or the kit itself changes after `check`, the later
@@ -54,19 +54,23 @@ pixi run selftest selftest-out/
 
 `setup` downloads and compiles EPIMIGHT and pedigreegraph from Github at the commits pinned in
 `kit/nordicepimight/inst/pins.yaml`. It needs internet access and takes about 3 minutes
-the first time. Every run checks that the installed versions match the pins.
+the first time. The check step stops if the installed versions differ from the pins, and
+every later step stops if the kit changed since `check` ran.
 
 `selftest` runs the kit on a simulated toy site and compares its results with values
 computed independently. It takes about 2 minutes, prints one PASS, FAIL or SKIP line per
-check, and exits 1 if any check fails. Run it before using your own data.
-`kit/selftest/README.md` describes each check.
+check, and exits 1 if any check fails. Run it before using your own data. It needs a new
+or empty output folder, so delete `selftest-out/` before running it again.
+`kit/selftest/README.md` describes the toy site and where the expected values come from.
 
 ### On a server without internet access
 
 The install above downloads software, so it can't run on a server without internet
-access. For those servers each release has one [Apptainer](https://apptainer.org) image
-on the [releases page](https://github.com/rwaples/nordic-geno-epimight/releases):
-`nordic-geno-epimight-<version>.sif`, about 1 GB, with a `.sha256` file. The image holds the kit, all
+access. For those servers each tagged release (`v*`) carries one
+[Apptainer](https://apptainer.org) image on the
+[releases page](https://github.com/rwaples/nordic-geno-epimight/releases):
+`nordic-geno-epimight-<version>.sif`, about 1 GB, with a `.sha256` file. There is no
+release yet; until the first one, build the image yourself (below). The image holds the kit, all
 its software and the shared plan. The server needs Apptainer or Singularity (the
 commands are the same with `singularity` in place of `apptainer`), and neither pixi nor
 this repository.
@@ -90,7 +94,7 @@ this repository.
    The plan is inside the image, and the template already names it
    (`plan: /opt/kit/plan/initial.yaml`). Use absolute paths for your data.
 4. Run the kit. Wherever this README says `pixi run`, write `apptainer run` and the
-   image:
+   image (except `setup`, `test` and `lint`, which the image doesn't need):
 
    ```sh
    apptainer run --bind /path/to/data nordic-geno-epimight-<version>.sif study denmark.yaml out/
@@ -114,7 +118,10 @@ apptainer exec nordic-geno-epimight-<version>.sif cat /opt/kit/docs/step-0.md | 
 apptainer exec nordic-geno-epimight-<version>.sif ls /opt/kit /opt/kit/docs
 ```
 
-To build the image yourself, run `container/build.sh` (ADR 0006).
+To build the image yourself, run `container/build.sh` (ADR 0006) on a computer with
+internet access and Apptainer; without Apptainer, run
+`pixi exec --spec apptainer=1.5.4 container/build.sh`. The build runs the unit tests and the
+self-test inside the image and deletes an image that fails them.
 
 ## Run at your site
 
@@ -143,8 +150,9 @@ plan:
 
 - Run `check` and `cohort` on their own first. They read every input and build the
   largest table, `cohort.tsv`.
-- The `epimight` step prints the seconds each call took, and `run.yaml` records the total
-  under `wall_seconds`. The calls run one after another. The initial plan has 537
+- The `epimight` step prints the seconds each call took and lists them in
+  `3_epimight/jobs.tsv`; `out/run.yaml` records the step's total as
+  `epimight: wall_seconds`. The calls run one after another. The initial plan has 537
   analyses and the complete one 1,083 (`plan/README.md`).
 - `threads` speeds up pedsum, the relative counts and the sandwich SEs. Don't set it
   above the cores you were given.
@@ -158,9 +166,9 @@ plan:
 | Step | Output | Does |
 |---|---|---|
 | `prepare` | your data folder | Your own scripts; the kit has no command for it (below) |
-| `check` | `out/1_check/` | Checks every input and lists each problem in `findings.tsv`; `pedigree_coverage.tsv` counts pedigree people with no trait row per birth decade |
-| `cohort` | `out/2_cohort/` | Applies the trait rules and counts each person's relatives, writing `cohort.tsv`; `relatives_coverage.tsv` counts the relatives with no trait row, who never count, per relationship and birth decade |
-| `epimight` | `out/3_epimight/` | Runs EPIMIGHT once for each estimate the analyses need |
+| `check` | `out/1_check/` | Checks every input and lists each problem in `findings.tsv`; `pedigree_coverage.tsv` counts pedigree people with no trait row per birth decade; `pedsum/` holds pedsum's logs |
+| `cohort` | `out/2_cohort/` | Applies the trait rules (`rules.tsv` counts whom each rule dropped or censored) and counts each person's relatives, writing `cohort.tsv`; `relatives_coverage.tsv` counts, per relationship and the relative's birth decade, the pairs of a study-population person and a relative (before the trait rules) whose relative has no trait row and so never counts |
+| `epimight` | `out/3_epimight/` | Runs EPIMIGHT once for each estimate the analyses need; `jobs.tsv` lists each call's outcome, warnings and seconds |
 | `tables` | `out/*.tsv`, `out/run.yaml` | Writes the result tables |
 | `report` | `out/report.html` | Writes one page with every result and plot |
 | `export` | `out/6_export/` | Writes the folder to share, with small counts suppressed |
@@ -204,7 +212,7 @@ when there is no `birth_year` column.
 
 `--twin-max-days 1` makes full siblings born at most a day apart a multiple-birth set (the
 `multiple_birth_set` column). The kit finds the sets the same way and leaves their pairs
-out of `FS` (see [plan/analyses.tsv](#plananalysestsv)). Check the `multiple births:` line pedsum prints.
+out of `FS` unless their known sexes differ (see [the analyses table](#the-analyses-table)). Check the `multiple births:` line pedsum prints.
 If pedsum warns that a set spans more than a day, the birth dates may be placeholders.
 
 If your register records multiple births, use its id instead: give the pedigree a column
@@ -277,14 +285,15 @@ row for each person in the study population.
 | Column | Meaning |
 |---|---|
 | `id` | Person id, the same as in the pedigree. Read as text: `001`, `1` and `1.0` are three people |
-| `trait` | One value for the whole file. The kit records it but doesn't use it |
+| `trait` | Exactly one value for the whole file. The kit checks this but doesn't use the value |
 | `status` | 1 has the trait, 2 had a competing event such as death, 0 censored |
 | `status_date` | Date of the status: onset, competing event or end of follow-up |
 | `code` | Optional. ICD code of the first diagnosis for cases, `NA` for everyone else. The kit checks it but doesn't use it |
 
 The kit computes each age as `(status_date - birth_date) / 365.25`, from the pedigree's
-`birth_date`. EPIMIGHT uses whole years. Other columns are allowed and ignored, so check
-the names of the ones above: a column called `Code` is not `code`.
+`birth_date`, and floors it to whole years for EPIMIGHT. Each `status_date` must be on or
+after the person's `birth_date` and on or before `study_end`. Other columns are allowed and
+ignored, so check the names of the ones above: a column called `Code` is not `code`.
 
 All trait files must list the same people. If you exclude someone from a trait, keep their
 row and censor it (status 0), with `status_date` the date they leave follow-up.
@@ -333,9 +342,9 @@ trait      relationship  max_followup_relatives
 adhd_fu20  PO            50
 ```
 
-### plan/analyses.tsv
+### The analyses table
 
-One row per estimate, with `analysis_id, analysis, trait, relatives_trait, relationship`.
+`plan/analyses_initial.tsv` and `plan/analyses_complete.tsv`, one per plan. One row per estimate, with `analysis_id, analysis, trait, relatives_trait, relationship`.
 `analysis_id` is your name for the estimate and appears on every output row.
 
 `analysis` is `h2` or `rg`. For h2, `relatives_trait` equals `trait`. For rg, the estimate
@@ -345,7 +354,7 @@ direction, so list both rows if you want both.
 | `relationship` | Relatives | Relatedness |
 |---|---|---|
 | `PO` | parents | 0.5 |
-| `FS` | full siblings, except same-sex members of one multiple birth | 0.5 |
+| `FS` | full siblings, except members of one multiple birth not known to differ in sex | 0.5 |
 | `HS` | half siblings | 0.25 |
 | `mHS`, `pHS` | maternal or paternal half siblings | 0.25 |
 | `Av` | aunts and uncles | 0.25 |
@@ -374,7 +383,7 @@ the unrounded values.
 | `rg.tsv` | The same for rg, plus `rhh` and both h2 values at the age rg uses |
 | `cif.tsv` | The cumulative incidence curves each analysis uses |
 | `cohort_summary.tsv` | Probands, outcomes and relatives per trait, relationship and stratum |
-| `run.yaml` | Site, plan checksum, versions, input checksums, settings, warnings and EPIMIGHT's calls |
+| `run.yaml` | Site, plan checksum, kit and package versions, input checksums, settings, the analyses, study-population size, warnings, EPIMIGHT call counts and run time, and output row counts |
 
 Report the sandwich interval. `se_native` treats relatives as independent and is there
 only for comparison. When EPIMIGHT can't estimate a stratum or an analysis, its row stays
@@ -383,9 +392,10 @@ with NA and a note giving the reason.
 ### The folder to share
 
 `out/6_export/` holds the five files above and a report built from them. Every count
-from 1 to `export_min_count` (5) is suppressed: such cells in `cohort_summary.tsv` are
-NA, and so are the other two of cases, competing and censored when one of them is, since
-they sum to the probands. CIF rows whose cumulative cases are 1 to 5 are left out.
+from 1 to `export_min_count` (5 in the shared plan) is suppressed: such cells in
+`cohort_summary.tsv` are NA, and so are the other two of cases, competing and censored when
+one of them is, since they sum to the probands. CIF rows whose cumulative cases are 1 to
+`export_min_count` are left out.
 `run.yaml` names the input files without their paths and records what was suppressed.
 These rules are preliminary: nothing yet covers small differences between neighbouring
 cells, such as one new case between two ages of a CIF curve.
@@ -397,24 +407,33 @@ plan's tables, missing files, bad dates or statuses, a code on someone who isn't
 duplicate ids, ids missing from the pedigree, trait files with different people, a
 missing stratum value, anything pedsum validate finds in the pedigree, or installed
 packages that don't match the pins. Each line of `out/1_check/findings.tsv` has a code,
-the file, a count, examples and what is wrong.
+a severity (`STOP` or `WARN`), the file, a count, what is wrong and up to ten examples.
 
-Some problems are warnings and don't stop the run, for example fewer than 10 cases in a
-stratum.
+Warnings don't stop the run: `few_cases` (fewer than 10 cases in a stratum) and
+`trait2_unused` (a `trait2` set on a trait whose `exclude_trait2` is `none`). `run.yaml`
+counts them, without examples.
 
-Two later stops can happen. The cohort step stops if a trait's rules leave nobody. The
-tables step stops if EPIMIGHT fails in a way the kit didn't predict. Please report that
-one.
+Later steps stop in these cases:
+
+- A step starts before the one before it finished, or an input file or the kit changed
+  since `check`. The message names the command to rerun.
+- The cohort step stops (`trait_no_probands` in `2_cohort/findings.tsv`) if a trait's
+  rules leave nobody.
+- The tables step stops (`4_tables/findings.tsv`) if EPIMIGHT's outcome differs from the
+  kit's prediction: an error the kit didn't predict, a call that ran when the kit expected
+  EPIMIGHT to stop, or rg ages the kit can't rebuild. Please report these.
 
 ## Repository layout
 
 - `plan/`: the shared analysis plan.
 - `local/`: each site's file (not committed), and `example.yaml`.
 - `kit/`: the kit's R package (`nordicepimight/`), its setup script, and the self-test's
-  toy site, expected results and the scripts that build them. `pixi run test` and
-  `pixi run lint` check the package.
+  toy site, the rule-coverage site (`selftest/cohort_cases/`), expected results and the
+  scripts that build them. `pixi run test` tests the package; `pixi run lint` lints it,
+  `kit/setup.R` and the build scripts.
 - `container/`: the recipe and build script of the Apptainer image, for servers without
-  internet access.
+  internet access. `.github/workflows/container.yml` builds it, runs the self-test and, on a
+  `v*` tag, attaches it to the release and pushes it to ghcr.io.
 - `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
 - `docs/`: the glossary, design decisions (`adr/`), open questions, the statistical
   analysis plan (SAP, `SAP_Scandinavian_Genealogy.md` and its source docx), the data

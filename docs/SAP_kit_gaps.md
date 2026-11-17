@@ -47,15 +47,15 @@ a trait file holds one row per person.
 
 ## What else the kit can't do yet
 
-1. **Twins (4.1).** The kit now keeps sex-discordant pairs from one multiple-birth set
+1. **Twins (4.1), details unconfirmed.** The main rule is done: the kit keeps sex-discordant pairs from one multiple-birth set
    as full siblings and leaves out same-sex pairs and pairs with an unknown sex
    (`kit/nordicepimight/R/relationships.R`). Two details are unconfirmed (open question
    5): the kit leaves such pairs out of `FS` only, and judges each pair in a set of three
-   or more by its own sexes.
+   or more by its own sexes (issue #13).
 
 2. **Probands born in the country (4.1).** People born abroad count as relatives but
-   not as probands. The kit has no rule for this, and the pedigree has no column that
-   records it.
+   not as probands. Step 0 defines an optional `birth_place` column for this (issue #12),
+   but the kit doesn't use it yet.
 
 3. **Three birth-cohort groupings (6.4, 6.6).** The SAP estimates every h² and rg per
    birth year, per 5-year and per 10-year birth cohort, and meta-analyses within each
@@ -117,7 +117,7 @@ The kit supports each of these; only `plan/` has to change.
 
 ## Left to each site's data preparation
 
-The kit can't check these. The README lists them under step 0.
+The kit can't check these. `docs/step-0.md` lists them.
 
 - **Adoptions.** Links between adoptees and their adoptive parents are kept (4.1). Sites
   should not remove them.

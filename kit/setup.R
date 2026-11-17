@@ -1,6 +1,6 @@
 # pixi run setup
 #
-# Step 0: builds epimight and pedigreegraph from their pinned GitHub commits
+# Setup: builds epimight and pedigreegraph from their pinned GitHub commits
 # (kit/nordicepimight/inst/pins.yaml) into this pixi environment, then installs the kit's own
 # package. A package already built from its pinned commit is kept, so rerunning is cheap.
 # Needs internet access the first time; pedigreegraph compiles Rust (a few minutes).

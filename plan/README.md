@@ -1,7 +1,7 @@
 # The shared analysis plan
 
 Every site runs these plans unchanged, so the results can be compared and combined. A
-change to them is a commit that every site pulls; `run.yaml` records the plan's
+change to them is a commit that every site pulls, or a new image for sites that use one; `run.yaml` records the plan's
 checksum, and two sites ran the same plan when their checksums match.
 
 There are two plans over the same traits and settings. Run the initial analysis first:
@@ -22,5 +22,5 @@ complete one 57 h² and 1,026 rg analyses.
   BD, SCZ, SSD) and 14 cardiometabolic. Each site provides one trait file per phenotype,
   named `<abbreviation>.tsv` (for example `MDD.tsv`), in its data folder, built from the
   ICD-8, ICD-9 and ICD-10 codes in that list.
-- Both plan files stratify by 5-year birth cohort and suppress counts from 1 to 5 in the
-  exported results. Their settings must stay the same; the kit's tests check it.
+- Both plan files stratify by 5-year birth cohort and suppress counts from 1 to 5
+  (`export_min_count`) in the exported results. Their settings must stay the same; the kit's tests check it.

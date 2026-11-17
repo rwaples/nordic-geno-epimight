@@ -8,7 +8,9 @@ build the trait files. Questions 10 to 12 come from new rules in version 8.
 
 1. **Which relatives count.** A relative counts only if they have a row in the trait
    file, after any relatives' follow-up window. Someone without a row is unobserved,
-   not unaffected. Is that what `make_epimight_tte` intends?
+   not unaffected. Is that what `make_epimight_tte` intends? A site can see how many
+   relatives this leaves out in `1_check/pedigree_coverage.tsv` and
+   `2_cohort/relatives_coverage.tsv`.
 
 2. **Parents, aunts and uncles.** The kit finds them from the pedigree, so an uncle
    younger than his nephew is still his uncle (ADR 0003). EPIMIGHT's registry SQL and
@@ -23,7 +25,7 @@ build the trait files. Questions 10 to 12 come from new rules in version 8.
    `Definitions/Phenotype_list.tsv`, haemorrhagic stroke is abbreviated `HS`, the same
    code the kit uses for half siblings. The kit keeps the two apart, but tables and plots
    that show both are easy to misread. Could the abbreviation become `HST`? The shared
-   plan (`plan/traits.tsv`, `plan/analyses.tsv`) will follow.
+   plan (`plan/traits.tsv`, `plan/analyses_initial.tsv`, `plan/analyses_complete.tsv`) will follow.
 
 5. **Which twin pairs leave full siblings.** Version 8 settles the main question (4.1):
    sex-discordant twin pairs stay full siblings and sex-concordant pairs are left out.

@@ -2,6 +2,10 @@
 
 Status: accepted (2026-10-14). ADR 0006 adds an Apptainer image built from this install.
 
+Amended 2026-11-17: "Step 0" below is `pixi run setup`. The kit now calls it setup and
+uses step 0 for the site's data preparation (`docs/step-0.md`). Setup also installs the
+kit's own package, `nordicepimight`.
+
 ## Context
 
 The first version ran EPIMIGHT in BioPsyk's Docker image, pinned by digest. That image

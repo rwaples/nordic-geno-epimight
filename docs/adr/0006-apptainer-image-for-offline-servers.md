@@ -19,8 +19,9 @@ to it. A site imports the file like any other and runs the kit with `apptainer r
   (`pixi install --locked`, `pixi run setup`) inside the image, so the image holds the
   environment of `pixi.lock` and the R packages of `pins.yaml`, as ADR 0002 decided. The
   base image is pinned by digest.
-- The image holds the repository at `/opt/kit`, the shared plan included. A site file
-  names `/opt/kit/plan/initial.yaml`, so the image fixes which plan ran.
+- The image holds the repository at `/opt/kit`, the shared plan included. The template
+  site file names `/opt/kit/plan/initial.yaml`, and `run.yaml`'s plan checksum records
+  which plan ran.
 - The build runs the unit tests. `container/build.sh` then runs the self-test in the
   finished image as an ordinary user and deletes an image that fails it.
 - `setup` writes the kit's `git describe` and commit into the installed package, and

@@ -9,10 +9,11 @@ Each rule has a tag:
 |---|---|
 | **[SAP x.y]** | Required by that section of the SAP |
 | **[kit]** | Required by the kit. `check` stops if you break it |
+| **[kit, unchecked]** | The kit's results depend on it, but `check` can't see it |
 | **[recommended]** | Our default. If you do something else, write it down |
 
-The kit checks formats only. The **[SAP]** and **[recommended]** rules are yours to get
-right.
+The kit checks formats, and pedsum checks the pedigree's structure (section 1.4). The
+**[SAP]**, **[kit, unchecked]** and **[recommended]** rules are yours to get right.
 
 The commands below are written for a checkout of the kit. With the Apptainer image,
 write `apptainer run IMAGE` wherever they say `pixi run`, and name your data folders
@@ -32,7 +33,7 @@ with `--bind` (README, "On a server without internet access").
 
 - Tab-separated text files, with a header row. **[kit]**
 - Missing values: `NA`. Don't leave cells empty.
-- Ids are interpreted as text: `001`, `1` and `1.0` are three different people. **[kit]**
+- The kit reads ids as text: `001`, `1` and `1.0` are three different people.
 - `0` is never an id, in any file.
 - Dates should be in this format: `YYYY-MM-DD`. **[kit]**
 - No commas within numbers.
@@ -51,13 +52,14 @@ One row per person.
 | `mother` | text | Mother's id, or missing | required |
 | `father` | text | Father's id, or missing | required |
 | `sex` | integer | `1` male, `2` female, `0` unknown | required |
-| `birth_date` | date, `YYYY-MM-DD` | Date of birth | optional |
+| `birth_date` | date, `YYYY-MM-DD` | Date of birth. Everyone with trait rows needs one; other people may have `NA` | required **[kit]** |
 | `birth_year` | integer, 4 digits | Must agree with `birth_date` | optional |
 | `multiple_birth_id` | integer | Same number for everyone born in one delivery, `NA` for single births. Each delivery gets its own number | optional |
 | `birth_place` | text | Country of birth as an ISO 3166-1 alpha-2 code (`DK`, `SE`, `NO`, ...), `NA` if unknown | optional |
 
 - Missing parent: `NA`, `-1`, or your own code passed to pedsum with
-  `--missing-parent-token`. Never `0`. **[kit]**
+  `--missing-parent-token`. pedsum stops on a `0` parent that has no row of
+  its own unless you pass `--missing-parent-token 0`. **[kit]**
 - Give every parent a row of their own where you can.
 - Fill `birth_place` if your register has it. The SAP restricts probands to people born
   in the country (4.1). The kit doesn't use the column yet (issue #12). **[recommended]**
@@ -79,12 +81,16 @@ other relatives. **[SAP 4.1]**
   The kit leaves same-sex pairs from one multiple birth, and pairs with an unknown sex,
   out of FS as possible MZ twins. Boy-girl pairs stay full siblings. **[SAP 4.1]**
   Don't remove twins from the pedigree.
-  **[kit]** Twins stay probands and every other kind of relative: a twin's children are
-  still the co-twin's nieces and nephews.
+  Twins stay probands and every other kind of relative: a twin's children are still the
+  co-twin's nieces and nephews.
+- **Multiple-birth sets without `multiple_birth_id`.** The kit's check step makes full
+  siblings born at most a day apart a set (pedsum `--twin-max-days 1`), whatever you
+  used in 1.4.
 
 ### 1.4 Run pedsum
 
-**Please re-run validate and summarize, pedsum has been updated.**
+**Please re-run validate, pedsum has been updated.** The kit pins pedsum v0.17.0;
+`pixi run pedsum --version` shows the one you have.
 
 Run pedsum validate (old: `python pedigree_summary.py validate`):
 
@@ -97,18 +103,25 @@ gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
 
 With `multiple_birth_id`, replace `--twin-max-days 30` with `--multiple-birth-col multiple_birth_id`.
 
-Then go through and resolve any issues in `pedsum/validate.log`:
+Use `pedigree_validated.tsv`, pedsum's output, as `pedigree_path` in your site file
+(section 3). The kit's check step runs pedsum validate again on it, with
+`--twin-max-days 1` (or your `--multiple-birth-col`) and the same child limits, and stops
+on any finding. Your input file would fail that check wherever pedsum repaired it, for
+example by adding a founder row for a parent without one.
+
+Then go through and resolve any issues in `pedsum/validate.log` and in what pedsum prints:
 
 | Finding | Do this |
 |---|---|
 | `parent_child_count` | It's an unknown-parent code. Delete its own row if it has one and rerun with `--missing-parent-token <code>` |
 | Duplicate row, wrong sex for a parent, parent born after child, cycle | Fix it in your source data. Otherwise use `--drop-offending` or `--break-cycles` |
-| `multiple births:` line | A set spanning more than a day means placeholder birth dates. Fix them |
+| `multiple births:` line, printed to the terminal | It gives counts only. Rerun with `--twin-max-days 1`: sets found at 30 days but not at 1 usually mean placeholder birth dates. Fix them |
 | Multiple-birth set whose members aren't all full siblings, or with one member | pedsum clears it and its members count as single births. Check `multiple_birth_id` or the parent links |
 
 ## 2. The trait files
 
-One file per trait, all in one folder.
+One file per trait, all in one folder (`data_folder` in the site file), named as the `file`
+column of `plan/traits.tsv` says (section 2.3). **[kit]**
 
 ### 2.1 Format
 
@@ -117,7 +130,7 @@ One row per person in the study population (2.2).
 | Column | Type | Content |
 |---|---|---|
 | `id` | text | Person id, matches ids in the pedigree |
-| `trait` | text | One value for the whole file, for example `MDD`, matches trait definitions in `Definitions/Phenotype_list.tsv` |
+| `trait` | text | One value for the whole file, for example `MDD`, matching the trait definitions in `Definitions/Phenotype_list.tsv`. The kit doesn't compare it with anything |
 | `status` | integer | `1` has the trait (affected), `2` mortality while unaffected, `0` censored |
 | `status_date` | date, `YYYY-MM-DD` | The date that set `status` |
 | `code` | text | Optional. ICD code of the first diagnosis for cases (`status 1`), `NA` for everyone else |
@@ -128,7 +141,7 @@ Don't put `age` in the trait files. The kit computes it from `birth_date` and
 `check` stops if: **[kit]**
 
 - an `id` is missing, duplicated, or not in the pedigree
-- `trait` has more than one value
+- `trait` doesn't hold exactly one value
 - `status` isn't 0, 1 or 2
 - `status_date` isn't a date, is before the birth date, or is after `study_end`
 - `code`, if present, isn't `NA` for someone whose `status` is 0 or 2
@@ -137,11 +150,11 @@ Don't put `age` in the trait files. The kit computes it from `birth_date` and
 
 ### 2.2 Who gets a row
 
-- Everyone in the civil register with a valid birth date and sex, born on or before
-  `study_end`. **[recommended]**
+- Everyone in the civil register with a valid birth date and sex. **[recommended]**
+- Born on or before `study_end`. **[kit]**
 - The same people in every trait file. Someone a rule excludes from a trait keeps a row
   with `status 0`. **[kit]**
-- No birth-year filter. Relatives of every age need rows. **[kit]**
+- No birth-year filter. Relatives of every age need rows. **[kit, unchecked]**
 - Keep people born abroad, and count them. **[recommended]**
 - Parents found only through parent links may stay in the pedigree without trait rows.
   They won't count as relatives. **[recommended]**
@@ -174,7 +187,8 @@ Codes are in `Definitions/Phenotype_list.tsv` until the reviewed list replaces i
 | `IS.tsv` | Ischaemic stroke | |
 
 Deliver MDD, BD and SCZ as they are, without removing anyone for having another of the
-three. The plan applies the hierarchy. **[SAP 5.3]**
+three. The plan is meant to apply the hierarchy with second-trait rules; the current
+preliminary plan has none yet (open question 10). **[SAP 5.3]**
 
 ### 2.4 Windows
 
@@ -222,11 +236,13 @@ Build W1 first. It's the only window the kit can run today.
   cause of death. **[recommended]**
 - Diagnosis and death on the same day: `status 1`. **[recommended]**
 - Emigrated and came back: censor at the first emigration. **[recommended]**
-- Don't drop anyone for short follow-up. **[kit]**
+- Don't drop anyone for short follow-up. **[kit, unchecked]**
 
 ### 2.8 Example
 
 Danish W1, `study_end` 2023-12-31.
+
+The blocks are aligned for reading; the real files are tab-separated.
 
 Pedigree:
 
@@ -281,12 +297,21 @@ threads: 4
 
 `study_end` must be on or after every `status_date` in the trait files. **[kit]**
 
+The keys above are the only ones allowed. An unknown key, or a missing required one, stops
+`check`; `threads` and `multiple_birth_column` are optional.
+`threads` is a whole number from 1 to 1024, default 1. Relative paths are read from the
+site file's folder, not the folder you run from. **[kit]**
+
 ## 4. Checks
 
 ### 4.1 What the kit checks
 
-Formats (1.1, 2.1), the pedigree through pedsum, and that every trait file has the same
-people.
+The site file and the plan (section 3), formats (1.1, 2.1), the pedigree through pedsum
+(1.4), that every trait file has the same people, and that the installed software
+matches the kit's pins. Problems go to `out/1_check/findings.tsv`, one row each with a
+severity: `STOP` ends the run, `WARN` doesn't. A `few_cases` warning means a trait has
+fewer than 10 cases in some birth-year stratum. When the check passes it also writes
+`out/1_check/pedigree_coverage.tsv` (4.2).
 
 ### 4.2 What you check
 
@@ -326,4 +351,5 @@ Follow the current rule and note what you did.
 | Main diagnoses only, or secondary too | Count both | Open question 9 |
 | Underlying cause of death only, or contributing too | Note which you used | Not raised yet |
 | W3: people who died or emigrated before 2008, relatives outside the window | Wait | Open questions 6 and 7 |
+| The MDD, BD, SCZ hierarchy, and whether it applies to relatives | Deliver the three as they are (2.3) | Open question 10 |
 | Reviewed ICD codes per country | Use `Definitions/Phenotype_list.tsv` | SAP 5 |

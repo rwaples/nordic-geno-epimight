@@ -2,6 +2,13 @@
 
 Status: accepted, preliminary (2026-10-14)
 
+Amended 2026-11-17 to match the kit: `plan/` now holds two plan files, `initial.yaml` and
+`complete.yaml`, each naming its own analyses table (`analyses_initial.tsv`,
+`analyses_complete.tsv`) and sharing `traits.tsv`; a site file names one. The suppression
+threshold is the plan setting `export_min_count` (5 in both plans, 1 to 100). The site
+file may also name `multiple_birth_column` (ADR 0005). The plan checksum in `run.yaml`
+covers the plan file and every table it names.
+
 ## Context
 
 Collaborators in several Nordic countries run the same analyses on their own registers.
