@@ -531,3 +531,28 @@ test_that("pedigree coverage counts people with no trait row per birth decade (#
   expect_equal(coverage$trait_row, c(0L, 0L, 6L))
   expect_equal(coverage$no_trait_row, c(2L, 4L, 0L))
 })
+
+test_that("the plan checksum ignores CRLF and matches the LF digest list's md5", {
+  dir <- tempfile()
+  dir.create(dir)
+  on.exit(unlink(dir, recursive = TRUE))
+  write_bytes <- function(name, text) {
+    path <- file.path(dir, name)
+    writeBin(charToRaw(text), path)
+    path
+  }
+  lf <- list(plan_path = write_bytes("plan.yaml", "a: 1\nb: 2\n"),
+             traits = write_bytes("traits.tsv", "trait\tcode\nt1\tF20\n"),
+             analyses = write_bytes("analyses.tsv", "trait\nt1\n"))
+  crlf <- list(plan_path = write_bytes("plan_crlf.yaml", "a: 1\r\nb: 2\r\n"),
+               traits = write_bytes("traits_crlf.tsv", "trait\tcode\r\nt1\tF20\r\n"),
+               analyses = write_bytes("analyses_crlf.tsv", "trait\r\nt1\r\n"))
+  expect_identical(plan_checksum(crlf), plan_checksum(lf))
+  # The value the kit computed before CRLF was handled: the md5 of the "name md5" lines.
+  digest <- write_bytes("digest", paste0(names(plan_files(lf)), " ",
+                                         unname(tools::md5sum(unlist(plan_files(lf)))),
+                                         "\n", collapse = ""))
+  expect_identical(plan_checksum(lf), unname(tools::md5sum(digest)))
+  expect_false(identical(plan_checksum(lf),
+                         plan_checksum(modifyList(lf, list(analyses = lf$traits)))))
+})

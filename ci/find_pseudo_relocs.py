@@ -6,8 +6,9 @@ dies with "32 bit pseudo relocation ... out of range". conda-forge's Matrix 1.7-
 of them (kit/setup.R rebuilds it from source on Windows).
 
 The table (v2) is three 32-bit words 0, 0, 1, then 12-byte entries: symbol RVA, patched
-RVA, flags (the patch width in bits). A patched RVA below 0x1000 is in the PE headers,
-never code, so a run of words that only looks like a table is skipped.
+RVA, flags (the patch width in bits). The linker puts it in .rdata, word-aligned, so only
+the data sections are searched, at 4-byte steps; a patched RVA below 0x1000 is in the PE
+headers, never code, so a run of words that only looks like a table is skipped.
 """
 
 import struct
@@ -17,23 +18,36 @@ from pathlib import Path
 HEADER = struct.pack("<III", 0, 0, 1)
 
 
-def image_size(data: bytes) -> int:
+def layout(data: bytes) -> tuple[int, list[tuple[int, int]]]:
+    """The image size and the (start, end) file offsets of the .rdata and .data sections."""
     pe = struct.unpack_from("<I", data, 0x3C)[0]
-    return struct.unpack_from("<I", data, pe + 24 + 56)[0]
+    nsec = struct.unpack_from("<H", data, pe + 6)[0]
+    optional = struct.unpack_from("<H", data, pe + 20)[0]
+    image = struct.unpack_from("<I", data, pe + 24 + 56)[0]
+    ranges = []
+    for k in range(nsec):
+        name, _, _, size, raw = struct.unpack_from("<8sIIII", data, pe + 24 + optional + 40 * k)
+        if name.rstrip(b"\0") in (b".rdata", b".data"):
+            ranges.append((raw, min(raw + size, len(data))))
+    return image, ranges
 
 
 def narrow_entries(data: bytes) -> list[tuple[int, int, int]]:
-    image = image_size(data)
-    found, start = [], 0
-    while (i := data.find(HEADER, start)) != -1:
-        start, j = i + 4, i + 12
-        while j + 12 <= len(data):
-            sym, target, flags = struct.unpack_from("<III", data, j)
-            if flags not in (8, 16, 32, 64) or not (0 < sym < image) or not (0x1000 <= target < image):
-                break
-            if flags < 64:
-                found.append((sym, target, flags))
-            j += 12
+    image, ranges = layout(data)
+    found = []
+    for start, end in ranges:
+        i = start - 1
+        while (i := data.find(HEADER, i + 1, end)) != -1:
+            if (i - start) % 4:
+                continue
+            j = i + 12
+            while j + 12 <= end:
+                sym, target, flags = struct.unpack_from("<III", data, j)
+                if flags not in (8, 16, 32, 64) or not (0 < sym < image) or not (0x1000 <= target < image):
+                    break
+                if flags < 64:
+                    found.append((sym, target, flags))
+                j += 12
     return found
 
 
