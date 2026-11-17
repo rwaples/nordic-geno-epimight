@@ -86,8 +86,10 @@ jobs:
         continue-on-error: true
         shell: pwsh
         run: |
+          # Windows' own bash.exe, the WSL launcher, is on every machine and isn't a Unix shell.
           foreach ($tool in 'sh', 'bash', 'gcc', 'make', 'link', 'Rscript') {
-            $found = Get-Command $tool -ErrorAction SilentlyContinue
+            $found = Get-Command $tool -ErrorAction SilentlyContinue |
+              Where-Object { -not $_.Source.StartsWith($env:SystemRoot) }
             if ($found) { throw "$tool is on PATH: $($found.Source)" }
           }
           $host_line = rustc -vV | Select-String '^host: '
