@@ -15,26 +15,34 @@ Each rule has a tag:
 The kit checks formats, and pedsum checks the pedigree's structure (section 1.4). The
 **[SAP]**, **[kit, unchecked]** and **[recommended]** rules are yours to get right.
 
-The commands below are written for a checkout of the kit. With the Apptainer image,
-write `apptainer run IMAGE` wherever they say `pixi run`, and name your data folders
-with `--bind` (README, "On a server without internet access").
+This page is the one reference for the input formats. The commands below are written
+for a checkout of the kit ([run-with-pixi.md](run-with-pixi.md)): run them from the kit's
+folder. With the Apptainer image, [run-with-image.md](run-with-image.md) gives each one
+in image form. Terms in bold are in the [glossary](glossary.md); the open questions
+cited below are in [open-questions.md](open-questions.md).
+
+The initial plan uses window W1 (section 2.4) only, so you need one data folder and one
+site file. W2 and W3 can't be run yet.
 
 ## The short version
 
 1. Export the pedigree and run it through pedsum (section 1).
 2. Build one trait file per trait for window W1 (section 2).
 3. Write your site file (section 3).
-4. Run the checks in section 4.
-5. Run `pixi run check local/<site>.yaml out/` and fix every finding. With the image:
-   `apptainer run --bind /path/to/data IMAGE check <site>.yaml out/`.
+4. Run `pixi run check local/<site>.yaml /path/to/out/` and fix every finding (section
+   4.1).
+5. Do your own checks (section 4.2).
 6. Write your site note (section 4.3).
 
 ## Rules for every file
 
 - Tab-separated text files, with a header row. **[kit]**
-- Missing values: `NA`. Don't leave cells empty.
+- Missing values: `NA` or an empty cell. pedsum's output writes empty cells, which is
+  fine. In the trait files anything else, such as Stata's `.`, is read as a value.
 - The kit reads ids as text: `001`, `1` and `1.0` are three different people.
-- `0` is never an id, in any file.
+- `0` is an ordinary id. If your register writes an unknown parent as `0`, see 1.1.
+- Column names are case-sensitive: `Code` is not `code`. Other columns are allowed and
+  ignored.
 - Dates should be in this format: `YYYY-MM-DD`. **[kit]**
 - No commas within numbers.
 
@@ -89,33 +97,33 @@ other relatives. **[SAP 4.1]**
 
 ### 1.4 Run pedsum
 
-**Please re-run validate, pedsum has been updated.** The kit pins pedsum v0.17.0;
-`pixi run pedsum --version` shows the one you have.
-
-Run pedsum validate (old: `python pedigree_summary.py validate`):
+**pedsum** checks and repairs the pedigree; it comes with the kit (v0.17.0). Run it with
+the same settings the kit's check step uses, from the kit's folder, with your paths in
+full and outside the kit's folder:
 
 ```sh
-pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year \
-  --birth-date-col birth_date --twin-max-days 30 \
+pixi run pedsum validate --in /path/to/data/pedigree.tsv --out /path/to/data/pedsum/ \
+  --birth-year-col birth_year --birth-date-col birth_date --twin-max-days 1 \
   --max-children-mother 20 --max-children-father 50
-gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
+gunzip -c /path/to/data/pedsum/validate.tsv.gz > /path/to/data/pedigree_validated.tsv
 ```
 
-With `multiple_birth_id`, replace `--twin-max-days 30` with `--multiple-birth-col multiple_birth_id`.
+With `multiple_birth_id`, replace `--twin-max-days 1` with
+`--multiple-birth-col multiple_birth_id`. If your register writes unknown parents as `0`
+or another code, add `--missing-parent-token <code>`.
 
 Use `pedigree_validated.tsv`, pedsum's output, as `pedigree_path` in your site file
-(section 3). The kit's check step runs pedsum validate again on it, with
-`--twin-max-days 1` (or your `--multiple-birth-col`) and the same child limits, and stops
-on any finding. Your input file would fail that check wherever pedsum repaired it, for
-example by adding a founder row for a parent without one.
+(section 3). The kit's check step runs pedsum again on it and stops on any finding. Your
+original file would fail that check wherever pedsum repaired it, for example by adding a
+**founder row** for a parent without one.
 
-Then go through and resolve any issues in `pedsum/validate.log` and in what pedsum prints:
+Go through `/path/to/data/pedsum/validate.log` and what pedsum prints:
 
 | Finding | Do this |
 |---|---|
-| `parent_child_count` | It's an unknown-parent code. Delete its own row if it has one and rerun with `--missing-parent-token <code>` |
+| `parent_child_count` | A mother with more than 20 children or a father with more than 50. Almost always a code for an unknown parent, such as `9999`: check that the id is such a code, then delete its own row if it has one and rerun with `--missing-parent-token <code>` |
 | Duplicate row, wrong sex for a parent, parent born after child, cycle | Fix it in your source data. Otherwise use `--drop-offending` or `--break-cycles` |
-| `multiple births:` line, printed to the terminal | It gives counts only. Rerun with `--twin-max-days 1`: sets found at 30 days but not at 1 usually mean placeholder birth dates. Fix them |
+| `multiple births:` line, printed to the terminal | Counts of multiple-birth sets. To spot placeholder birth dates, run pedsum once more with `--twin-max-days 30` and `--out` set to another folder, and compare the counts: sets found at 30 days but not at 1 usually mean placeholder dates. Fix them. Don't use that run's output |
 | Multiple-birth set whose members aren't all full siblings, or with one member | pedsum clears it and its members count as single births. Check `multiple_birth_id` or the parent links |
 
 ## 2. The trait files
@@ -281,26 +289,31 @@ row in the other 18 trait files.
 
 ## 3. The site file
 
-Copy `local/example.yaml` to `local/<site>.yaml`, one per window. With the image, start
-from `apptainer run IMAGE template > <site>.yaml` instead, in any folder; its `plan:` line
-is `/opt/kit/plan/initial.yaml`, the plan inside the image.
+Copy `local/example.yaml` to `local/<site>.yaml`. With the image, start from
+`apptainer run IMAGE template > <site>.yaml` instead, in any folder.
 
 ```yaml
 site: Denmark
 plan: ../plan/initial.yaml
-data_folder: /path/to/trait/files                # this window's trait files
-pedigree_path: /path/to/pedigree_validated.tsv   # from section 1.4
-study_end: 2023-12-31                            # this window's study_end, section 2.4
+data_folder: /path/to/trait/files
+pedigree_path: /path/to/pedigree_validated.tsv
+study_end: 2023-12-31
 threads: 4
-# multiple_birth_column: multiple_birth_id       # if the pedigree has it, section 1.3
+# multiple_birth_column: multiple_birth_id
 ```
 
-`study_end` must be on or after every `status_date` in the trait files. **[kit]**
+| Key | Meaning | |
+|---|---|---|
+| `site` | The name your results carry | required |
+| `plan` | The shared plan. `../plan/initial.yaml` in a checkout, `/opt/kit/plan/initial.yaml` in the image; later `complete.yaml` | required |
+| `data_folder` | The folder of the trait files (section 2) | required |
+| `pedigree_path` | `pedigree_validated.tsv` from section 1.4; it need not be in `data_folder` | required |
+| `study_end` | This window's end of follow-up (section 2.4). On or after every `status_date` | required |
+| `threads` | Cores to use, a whole number from 1 to 1024. Don't set it above the cores you were given | optional, default 1 |
+| `multiple_birth_column` | The pedigree's multiple-birth column, if it has one (section 1.3) | optional |
 
-The keys above are the only ones allowed. An unknown key, or a missing required one, stops
-`check`; `threads` and `multiple_birth_column` are optional.
-`threads` is a whole number from 1 to 1024, default 1. Relative paths are read from the
-site file's folder, not the folder you run from. **[kit]**
+Any other key stops `check`. Relative paths are read from the site file's folder, not the
+folder you run from; with the image, use full paths. **[kit]**
 
 ## 4. Checks
 

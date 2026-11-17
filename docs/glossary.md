@@ -37,6 +37,25 @@ _Avoid_: phenotype, variant
 One file per trait, one row per person, with that person's status, status date and, for a case, ICD code.
 _Avoid_: TTE table, phenotype file
 
+**SAP**:
+The statistical analysis plan the collaborators agreed, version 8: `docs/SAP_Scandinavian_Genealogy.md`. "SAP 4.1" means its section 4.1.
+_Avoid_: protocol
+
+**Window**:
+One of the SAP's three analysis windows, W1, W2 and W3 (SAP 4.2): which diagnoses count, when follow-up ends and which probands enter. The kit can run W1 only, with one data folder per window.
+_Avoid_: period
+
+**pedsum**:
+The Python tool that checks and repairs the pedigree file. It comes with the kit; the site runs it during step 0 and the check step runs it again.
+_Avoid_: pedigree_summary.py (its old name)
+
+**Founder row**:
+A row pedsum adds to the pedigree for a parent who has no row of their own, with unknown parents and no birth date.
+
+**Proband**:
+A person whose own outcome is analysed, with their relatives' outcomes as family history. Every person in the study population is a proband for each trait, unless the trait's rules drop them. In the output tables the proband's trait is the `index_trait` (or `trait`).
+_Avoid_: index person, case (a case is a proband with status 1)
+
 **Study population**:
 The people followed for every trait; each has exactly one row in every trait file.
 _Avoid_: sample
@@ -60,6 +79,14 @@ _Avoid_: batch, cohort
 **Relationship**:
 One of eight fixed kinds of relative (PO, FS, HS, mHS, pHS, Av, 1G, 1C), each with a fixed relatedness.
 _Avoid_: relationship kind; `relatives_kind` is EPIMIGHT's column name for it, kept in `cohort.tsv` and `cohort_summary.tsv`
+
+**h², rg, CIF**:
+Heritability (h², the share of liability to a trait due to additive genetics), genetic correlation (rg, between two traits) and cumulative incidence (CIF, the share of people with the trait by each age, allowing for competing events). EPIMIGHT estimates h² and rg from how much more often probands with an affected relative have the trait.
+_Avoid_: CIP
+
+**Sandwich SE**:
+A standard error that allows for the same person appearing in many relative pairs, computed from the pedigree's pairs up to the plan's `max_degree`. Report its interval. `se_native` is EPIMIGHT's SE that treats every pair as independent, kept only for comparison.
+_Avoid_: robust SE
 
 **Analysis**:
 One EPIMIGHT estimate requested in the analysis list: h² for a trait, or rg for one direction between two traits, for one relationship.

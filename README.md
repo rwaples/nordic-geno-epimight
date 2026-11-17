@@ -1,441 +1,66 @@
 # nordic-geno-epimight
 
-A series of R scripts (kit) to run [EPIMIGHT](https://github.com/BioPsyk/epimight) analyses in parallel across the registers of Denmark, Norway and Sweden. Birth year-stratified estimates of cumulative incidence function (CIF), heritability (h²) and genetic correlation (rg) are produced within each country.
-
-Repo structure: The repo is split into `plan/` and `local/` folders. The `plan/` folder applies to all countries and contains files describing the traits and the analyses to be conducted. The `local/` folder contains a single config file, unique to each country, describing how to find the input data and a bit about how to run the analysis (e.g. number of cores). The repo also contains some documentation and associated files.
-
-The kit checks the data, builds input for EPIMIGHT, runs EPIMIGHT, and collects the output. In addition to the raw output, the kit can produce plots and summaries of the results, as well as prepare the results for export by suppressing small counts.
-
-| # | Step | Description |
-|---|---|---|
-| 0 | `prepare` | Convert country-specific registry data to common phenotype and pedigree data formats. Prerequisite for these analyses. |
-| 1 | `check` | Checks and validates input data - including both phenotype and pedigree data |
-| 2 | `cohort` | Selects individuals for analysis, applies the trait rules and counts each person's relatives, writing `cohort.tsv` |
-| 3 | `epimight` | Runs EPIMIGHT once for each estimate the analyses need |
-| 4 | `tables` | Collects and synthesizes the EPIMIGHT output |
-| 5 | `report` | Prepares plots of the results and summaries |
-| 6 | `export` | Writes the folder to share, with small counts suppressed |
-
-Each step relies on the output of previous step(s). Rerunning a step deletes the output of
-the steps after it. If an input file or the kit itself changes after `check`, the later
-steps stop until you rerun `check`.
+A kit of R scripts that runs the same [EPIMIGHT](https://github.com/BioPsyk/epimight)
+analyses on the registers of Denmark, Norway and Sweden. Each country runs it on its own
+server and gets birth-year-stratified estimates of the cumulative incidence (CIF),
+heritability (h²) and genetic correlation (rg) of 19 psychiatric and cardiometabolic
+traits.
 
 Current status: **preliminary**.
 
-## Install
+## What you do at your site
 
-The kit needs [pixi](https://pixi.sh) 0.84. pixi installs one binary under
-`~/.pixi/bin` and doesn't need root. Its installer fetches the latest release unless told
-otherwise, and the kit refuses any other series, so name the version:
+1. **Prepare your data** in the kit's formats: one pedigree file and one file per trait
+   (19 for the initial plan). [docs/step-0.md](docs/step-0.md) gives the formats and the
+   rules from the statistical analysis plan (SAP).
+2. **Install the kit and run it**, by one of two routes:
+   - a server with internet access: [docs/run-with-pixi.md](docs/run-with-pixi.md);
+   - a server without internet access, such as TSD:
+     [docs/run-with-image.md](docs/run-with-image.md). The Apptainer image is not released
+     yet.
+3. **Send the folder `out/6_export/`**, and nothing else. It holds the results with small
+   counts suppressed. Everything else the kit writes holds individual-level data or
+   unsuppressed counts and stays on your server. [docs/outputs.md](docs/outputs.md) describes every output and what to
+   review before sending.
 
-```sh
-curl -fsSL https://pixi.sh/install.sh | PIXI_VERSION=v0.84.1 bash
-export PATH="$HOME/.pixi/bin:$PATH"
-pixi --version
-```
+The kit's own work is six steps, which `study` runs in order:
 
-The installer also adds `~/.pixi/bin` to `PATH` in your shell's startup file. If
-`pixi --version` fails in a new terminal, add the `export` line there yourself. If you
-already have pixi at another version, switch with:
-
-```sh
-pixi self-update --version v0.84.1
-```
-
-Then get the kit and install it:
-
-```sh
-git clone https://github.com/rwaples/nordic-geno-epimight.git
-cd nordic-geno-epimight
-pixi install --locked
-pixi run setup
-pixi run selftest selftest-out/
-```
-
-`setup` downloads and compiles EPIMIGHT and pedigreegraph from Github at the commits pinned in
-`kit/nordicepimight/inst/pins.yaml`. It needs internet access and takes about 3 minutes
-the first time. The check step stops if the installed versions differ from the pins, and
-every later step stops if the kit changed since `check` ran.
-
-`selftest` runs the kit on a simulated toy site and compares its results with values
-computed independently. It takes about 2 minutes, prints one PASS, FAIL or SKIP line per
-check, and exits 1 if any check fails. Run it before using your own data. It needs a new
-or empty output folder, so delete `selftest-out/` before running it again.
-`kit/selftest/README.md` describes the toy site and where the expected values come from.
-
-### On a server without internet access
-
-The install above downloads software, so it can't run on a server without internet
-access. For those servers each tagged release (`v*`) carries one
-[Apptainer](https://apptainer.org) image on the
-[releases page](https://github.com/rwaples/nordic-geno-epimight/releases):
-`nordic-geno-epimight-<version>.sif`, about 1 GB, with a `.sha256` file. There is no
-release yet; until the first one, build the image yourself (below). The image holds the kit, all
-its software and the shared plan. The server needs Apptainer or Singularity (the
-commands are the same with `singularity` in place of `apptainer`), and neither pixi nor
-this repository.
-
-1. Download both files on a computer with internet access and import them the way your
-   server imports any file.
-2. Check the file, then run the self-test:
-
-   ```sh
-   sha256sum -c nordic-geno-epimight-<version>.sif.sha256
-   apptainer run nordic-geno-epimight-<version>.sif selftest selftest-out/
-   ```
-
-3. Write your site file as [below](#run-at-your-site), in any folder, from this
-   template:
-
-   ```sh
-   apptainer run nordic-geno-epimight-<version>.sif template > denmark.yaml
-   ```
-
-   The plan is inside the image, and the template already names it
-   (`plan: /opt/kit/plan/initial.yaml`). Use absolute paths for your data.
-4. Run the kit. Wherever this README says `pixi run`, write `apptainer run` and the
-   image (except `setup`, `test` and `lint`, which the image doesn't need):
-
-   ```sh
-   apptainer run --bind /path/to/data nordic-geno-epimight-<version>.sif study denmark.yaml out/
-   ```
-
-Apptainer shows the image your home folder, the folder you run it from and `/tmp`. Name
-every other folder your site file uses with `--bind`. If you forget one, the kit says a
-file or folder is not found and reminds you of `--bind`. `apptainer run-help` on the image
-lists the commands. Each run's `run.yaml` records the image's version and commit under
-`kit`.
-
-Bind the folder your files are really in. If a path in your site file is a link, or
-passes through one, bind the folder the link points to. The output folder follows the
-same rule: bind the folder you want it in, unless that is your home folder, the folder
-you run from or `/tmp`.
-
-The image holds this README and `docs/` under `/opt/kit`. To read one on the server:
-
-```sh
-apptainer exec nordic-geno-epimight-<version>.sif cat /opt/kit/docs/step-0.md | less
-apptainer exec nordic-geno-epimight-<version>.sif ls /opt/kit /opt/kit/docs
-```
-
-To build the image yourself, run `container/build.sh` (ADR 0006) on a computer with
-internet access and Apptainer; without Apptainer, run
-`pixi exec --spec apptainer=1.5.4 container/build.sh`. The build runs the unit tests and the
-self-test inside the image and deletes an image that fails them.
-
-## Run at your site
-
-1. Prepare your data folder (step 0, below).
-2. Copy `local/example.yaml` to `local/<your site>.yaml` and fill it in. Files in `local/`
-   are not committed.
-3. Run every step:
-
-   ```sh
-   pixi run study local/denmark.yaml out/
-   ```
-
-4. Send `out/6_export/`. Nothing else in `out/` may leave your server: it holds
-   individual-level data.
-
-Start with the initial plan. For the complete one, change `plan:` in your site file to
-`../plan/complete.yaml` (`/opt/kit/plan/complete.yaml` with the image) and use a new
-output folder.
-
-### Time and memory
-
-The kit has not been timed on a full register yet, so there is no figure to plan with.
-The toy site (4,500 people in the study population, 2 traits, 38 EPIMIGHT calls) takes
-36 seconds and 0.5 GB of memory with `threads: 2`. To measure your site before the full
-plan:
-
-- Run `check` and `cohort` on their own first. They read every input and build the
-  largest table, `cohort.tsv`.
-- The `epimight` step prints the seconds each call took and lists them in
-  `3_epimight/jobs.tsv`; `out/run.yaml` records the step's total as
-  `epimight: wall_seconds`. The calls run one after another. The initial plan has 537
-  analyses and the complete one 1,083 (`plan/README.md`).
-- `threads` speeds up pedsum, the relative counts and the sandwich SEs. Don't set it
-  above the cores you were given.
-- Put `/usr/bin/time -v` in front of a command to see its peak memory ("Maximum resident
-  set size").
-
-`pixi run study` runs six steps in order. You can run one at a time with
-`pixi run <step> local/denmark.yaml out/`. To try it on the toy site, use
-`kit/selftest/toy/site.yaml` in place of your site file.
-
-| Step | Output | Does |
+| # | Step | What it does |
 |---|---|---|
-| `prepare` | your data folder | Your own scripts; the kit has no command for it (below) |
-| `check` | `out/1_check/` | Checks every input and lists each problem in `findings.tsv`; `pedigree_coverage.tsv` counts pedigree people with no trait row per birth decade; `pedsum/` holds pedsum's logs |
-| `cohort` | `out/2_cohort/` | Applies the trait rules (`rules.tsv` counts whom each rule dropped or censored) and counts each person's relatives, writing `cohort.tsv`; `relatives_coverage.tsv` counts, per relationship and the relative's birth decade, the pairs of a study-population person and a relative (before the trait rules) whose relative has no trait row and so never counts |
-| `epimight` | `out/3_epimight/` | Runs EPIMIGHT once for each estimate the analyses need; `jobs.tsv` lists each call's outcome, warnings and seconds |
-| `tables` | `out/*.tsv`, `out/run.yaml` | Writes the result tables |
-| `report` | `out/report.html` | Writes one page with every result and plot |
-| `export` | `out/6_export/` | Writes the folder to share, with small counts suppressed |
+| 1 | `check` | Checks every input and lists each problem in `findings.tsv` |
+| 2 | `cohort` | Applies the trait rules and counts each person's relatives, writing EPIMIGHT's input |
+| 3 | `epimight` | Runs EPIMIGHT for the plan's analyses: about three calls per analysis, plus one per trait |
+| 4 | `tables` | Collects EPIMIGHT's output into the result tables |
+| 5 | `report` | Writes one HTML page with every result and plot |
+| 6 | `export` | Writes the folder to share, with small counts suppressed |
 
-### Step 0: prepare your data
+Your data preparation is "step 0": the kit has no command for it.
 
-Each site converts its own registers into the kit's formats. The trait files go in one
-data folder, one file per trait in `plan/traits.tsv`, named as its `file` column says
-(`MDD.tsv`, ...). The pedigree file can be anywhere; the site file names both. The
-formats are under [Inputs](#inputs). Trait definitions, including ICD codes, are in
-`Definitions/Phenotype_list.tsv`.
+## How the repository is organised
 
-**[docs/step-0.md](docs/step-0.md) is the full guide:** the formats every file must
-meet, and the rules from the statistical analysis plan (SAP version 8) to apply on the
-way, such as which diagnoses count, age limits, cause of death, adoptions, same-sex
-parents and the analysis windows. The kit can't check those rules; it only checks the
-formats.
-
-Last, repair the pedigree with pedsum. pedsum owns the pedigree (ADR 0005): the kit
-never changes it and has no pedigree checks of its own. Its check step runs `pedsum
-validate` on your pedigree file and stops on anything pedsum finds, such as a parent
-without a row of its own, a duplicate row, a sex that contradicts a parent role, a birth
-date that isn't `YYYY-MM-DD` or a parent born after their child. Run the same command
-first:
-
-```sh
-pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year \
-  --birth-date-col birth_date --twin-max-days 1 \
-  --max-children-mother 20 --max-children-father 50
-gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
-```
-
-Then point `pedigree_path` at `pedigree_validated.tsv`. pedsum adds a founder row, with no
-`birth_date`, for each parent without a row of its own. Check those parents in
-`pedsum/validate.log` first. A `parent_child_count` finding names a mother with more than
-20 children or a father with more than 50: almost always a code for an unknown parent,
-such as `9999`. Delete that code's own row if it has one, then rerun with
-`--missing-parent-token <code>`. If pedsum stops or finds something it doesn't repair, see
-its `--drop-offending` and `--break-cycles` options; `--break-cycles` works from birth dates
-when there is no `birth_year` column.
-
-`--twin-max-days 1` makes full siblings born at most a day apart a multiple-birth set (the
-`multiple_birth_set` column). The kit finds the sets the same way and leaves their pairs
-out of `FS` unless their known sexes differ (see [the analyses table](#the-analyses-table)). Check the `multiple births:` line pedsum prints.
-If pedsum warns that a set spans more than a day, the birth dates may be placeholders.
-
-If your register records multiple births, use its id instead: give the pedigree a column
-that holds the same value for everyone born in one delivery and is empty or `NA` for
-everyone else, run pedsum with `--multiple-birth-col <column>` in place of `--twin-max-days 1`,
-and name the column in the site file's `multiple_birth_column`. pedsum numbers the sets in
-its own `multiple_birth_set` column, which the kit reads.
-pedsum reports a set whose members are not all full siblings, or that has one member, as a
-finding in `pedsum/validate.log` and clears those cells, so review it before you use
-`validate.tsv.gz`: a cleared member counts as a single birth.
-
-## Inputs
-
-All tables are tab-separated and include a header row. Missing values are `NA` or an
-empty cell. Ids are read as text, so `001`, `1` and `1.0` are three different people.
-Relative paths are resolved from the folder of the file that names them; the trait files
-from your data folder.
-
-### Site file
-
-```yaml
-site: Denmark                         # the name your results carry
-plan: ../plan/initial.yaml            # the shared plan
-data_folder: /path/to/trait/files     # the trait files
-pedigree_path: /path/to/pedigree.tsv  # the pedigree; it need not be in data_folder
-study_end: 2021-12-31                 # end of register follow-up at this site
-threads: 4                            # optional, default 1
-# multiple_birth_column: delivery_id  # optional: the register's multiple-birth id
-```
-
-Without `multiple_birth_column`, multiple births are full siblings born at most a day
-apart (step 0).
-
-### Plan
-
-Two plan files hold the settings every site shares: `plan/initial.yaml` for the initial
-analysis and `plan/complete.yaml` for the complete one (`plan/README.md`). Each looks
-like this:
-
-```yaml
-traits: traits.tsv
-analyses: analyses_initial.tsv
-relative_windows: relative_windows.tsv   # optional
-stratify: [birth_year]                   # pedigree columns, or birth_year
-birth_year_bin: 5                        # default 1
-max_degree: 3                            # 1 to 5, default 3
-export_min_count: 5                      # default 5
-```
-
-EPIMIGHT estimates each stratum separately and then pools them. `birth_year` is the year
-of `birth_date`, grouped into `birth_year_bin`-year bins named by their first year.
-
-`max_degree` sets which relative pairs enter the sandwich SE. It must reach the furthest
-relationship analysed: 1 for PO and FS, 2 for HS, mHS, pHS, Av and 1G, 3 for 1C.
-
-### Pedigree
-
-One row per person with `id, mother, father, sex, birth_date`, plus any column you
-stratify on. Write an unknown parent as `NA`, empty, `-1` or any other token pedsum reads
-as missing. Use `0` only if 0 is a real id. Sex is 1 for male, 2 for female and 0 for
-unknown. Dates are `YYYY-MM-DD`. Everyone in the trait files needs a `birth_date`; other
-people may leave it empty. An optional `birth_year` must agree with `birth_date`. pedsum
-validate must find nothing wrong with the file (step 0).
-
-### Trait files
-
-One file per trait with `id, trait, status, status_date` and optionally `code`, and one
-row for each person in the study population.
-
-| Column | Meaning |
-|---|---|
-| `id` | Person id, the same as in the pedigree. Read as text: `001`, `1` and `1.0` are three people |
-| `trait` | Exactly one value for the whole file. The kit checks this but doesn't use the value |
-| `status` | 1 has the trait, 2 had a competing event such as death, 0 censored |
-| `status_date` | Date of the status: onset, competing event or end of follow-up |
-| `code` | Optional. ICD code of the first diagnosis for cases, `NA` for everyone else. The kit checks it but doesn't use it |
-
-The kit computes each age as `(status_date - birth_date) / 365.25`, from the pedigree's
-`birth_date`, and floors it to whole years for EPIMIGHT. Each `status_date` must be on or
-after the person's `birth_date` and on or before `study_end`. Other columns are allowed and
-ignored, so check the names of the ones above: a column called `Code` is not `code`.
-
-All trait files must list the same people. If you exclude someone from a trait, keep their
-row and censor it (status 0), with `status_date` the date they leave follow-up.
-
-### plan/traits.tsv
-
-One row per trait. A trait is a name, a file and optional rules. Several traits can share
-a file.
-
-| Column | Meaning |
-|---|---|
-| `trait` | Name used in the analyses: letters, digits, `_`, `.` or `-` |
-| `type` | `tte` (time to event), the only type so far |
-| `file` | The trait file's name in each site's data folder |
-| `min_followup` | Drop probands born fewer than this many years before `study_end` |
-| `max_followup` | Follow every proband for this many years. Drop those born too late, and censor later events at this age |
-| `max_followup_relatives` | The same window for relatives. Empty means the same as `max_followup`; `none` means no window |
-| `trait2` | Another trait whose onsets the next four columns use |
-| `exclude_trait2` | When a `trait2` onset flags a proband: `none` (default), `before`, `after` or `any`. The same age counts as before |
-| `trait2_window` | Years between the two onsets. Empty means any gap |
-| `trait2_window_type` | `within` (default): gap at most the window. `at_least`: gap at least the window |
-| `trait2_action` | `exclude` (default) drops flagged probands. `competing` keeps them, with a competing event at the `trait2` onset; it needs `before` |
-| `filter_relatives` | `TRUE` also applies the proband rules to relatives. Default `FALSE` |
-
-The rules follow `R/make_epimight_tte.R`, and the self-test checks that the kit builds the
-same table as that script for every rule. An example, with empty columns left out:
-
-```
-trait      type  file      max_followup  trait2  exclude_trait2  trait2_action
-adhd_fu20  tte   adhd.tsv  20
-adhd_fu30  tte   adhd.tsv  30
-mdd        tte   mdd.tsv                 bip     before          competing
-bip        tte   bip.tsv
-```
-
-`adhd_fu20` and `adhd_fu30` follow the same people for 20 and 30 years. In `mdd`, a BIP
-onset before MDD ends MDD follow-up as a competing event.
-
-### plan/relative_windows.tsv
-
-Optional. Sets `max_followup_relatives` for one trait and relationship. This row follows
-parents for 50 years while probands get 20:
-
-```
-trait      relationship  max_followup_relatives
-adhd_fu20  PO            50
-```
-
-### The analyses table
-
-`plan/analyses_initial.tsv` and `plan/analyses_complete.tsv`, one per plan. One row per estimate, with `analysis_id, analysis, trait, relatives_trait, relationship`.
-`analysis_id` is your name for the estimate and appears on every output row.
-
-`analysis` is `h2` or `rg`. For h2, `relatives_trait` equals `trait`. For rg, the estimate
-uses the `trait` outcomes of probands whose relatives have `relatives_trait`. That is one
-direction, so list both rows if you want both.
-
-| `relationship` | Relatives | Relatedness |
-|---|---|---|
-| `PO` | parents | 0.5 |
-| `FS` | full siblings, except members of one multiple birth not known to differ in sex | 0.5 |
-| `HS` | half siblings | 0.25 |
-| `mHS`, `pHS` | maternal or paternal half siblings | 0.25 |
-| `Av` | aunts and uncles | 0.25 |
-| `1G` | grandparents | 0.25 |
-| `1C` | first cousins | 0.125 |
-
-A relative counts only if they have a row in the trait file. PO, Av and 1G follow the
-pedigree, not birth order: an uncle younger than his nephew is still his uncle.
-
-Two members of one multiple-birth set (step 0) are not each other's `FS` relatives when
-they have the same sex, or either sex is unknown, since they may be MZ twins. A boy-girl
-pair is fraternal and stays `FS` (SAP version 8, 4.1). Each pair in a set of three or more
-is judged by its own two sexes. Twins stay probands, and each stays every other kind of
-relative: a twin's children are still the co-twin's nieces and nephews. Zygosity is
-unknown, so the kit doesn't count any pair as MZ. The sandwich SEs still treat the twins
-as a related pair.
-
-## Outputs
-
-Tables in `out/` round numbers to 6 significant digits. `out/4_tables/tables.rds` has
-the unrounded values.
-
-| File | Contents |
-|---|---|
-| `h2.tsv` | One row per stratum and a pooled row for each h2 analysis: ages used, h2, sandwich SE and 95% interval, EPIMIGHT's own SE, and a note |
-| `rg.tsv` | The same for rg, plus `rhh` and both h2 values at the age rg uses |
-| `cif.tsv` | The cumulative incidence curves each analysis uses |
-| `cohort_summary.tsv` | Probands, outcomes and relatives per trait, relationship and stratum |
-| `run.yaml` | Site, plan checksum, kit and package versions, input checksums, settings, the analyses, study-population size, warnings, EPIMIGHT call counts and run time, and output row counts |
-
-Report the sandwich interval. `se_native` treats relatives as independent and is there
-only for comparison. When EPIMIGHT can't estimate a stratum or an analysis, its row stays
-with NA and a note giving the reason.
-
-### The folder to share
-
-`out/6_export/` holds the five files above and a report built from them. Every count
-from 1 to `export_min_count` (5 in the shared plan) is suppressed: such cells in
-`cohort_summary.tsv` are NA, and so are the other two of cases, competing and censored when
-one of them is, since they sum to the probands. CIF rows whose cumulative cases are 1 to
-`export_min_count` are left out.
-`run.yaml` names the input files without their paths and records what was suppressed.
-These rules are preliminary: nothing yet covers small differences between neighbouring
-cells, such as one new case between two ages of a CIF curve.
-
-## When a run stops
-
-The check step stops on any input it can't use: unknown keys, unknown columns in the
-plan's tables, missing files, bad dates or statuses, a code on someone who isn't a case,
-duplicate ids, ids missing from the pedigree, trait files with different people, a
-missing stratum value, anything pedsum validate finds in the pedigree, or installed
-packages that don't match the pins. Each line of `out/1_check/findings.tsv` has a code,
-a severity (`STOP` or `WARN`), the file, a count, what is wrong and up to ten examples.
-
-Warnings don't stop the run: `few_cases` (fewer than 10 cases in a stratum) and
-`trait2_unused` (a `trait2` set on a trait whose `exclude_trait2` is `none`). `run.yaml`
-counts them, without examples.
-
-Later steps stop in these cases:
-
-- A step starts before the one before it finished, or an input file or the kit changed
-  since `check`. The message names the command to rerun.
-- The cohort step stops (`trait_no_probands` in `2_cohort/findings.tsv`) if a trait's
-  rules leave nobody.
-- The tables step stops (`4_tables/findings.tsv`) if EPIMIGHT's outcome differs from the
-  kit's prediction: an error the kit didn't predict, a call that ran when the kit expected
-  EPIMIGHT to stop, or rg ages the kit can't rebuild. Please report these.
-
-## Repository layout
-
-- `plan/`: the shared analysis plan.
-- `local/`: each site's file (not committed), and `example.yaml`.
+- `plan/`: the shared analysis plan, the same in every country: the traits, the analyses
+  and their settings ([plan/README.md](plan/README.md)). Sites don't edit it.
+- `local/`: each site's own site file, which says where its data are. Only
+  `example.yaml` is committed.
+- `docs/`:
+  - [step-0.md](docs/step-0.md): preparing your data, and the input formats
+  - [run-with-pixi.md](docs/run-with-pixi.md), [run-with-image.md](docs/run-with-image.md): installing and running
+  - [outputs.md](docs/outputs.md): the outputs, the folder to share, and what to do when a run stops
+  - [glossary.md](docs/glossary.md): the terms used here (proband, stratum, sandwich SE, ...)
+  - [open-questions.md](docs/open-questions.md): questions for the collaborators
+  - `SAP_Scandinavian_Genealogy.md` (and its source docx): the statistical analysis plan,
+    version 8; [SAP_kit_gaps.md](docs/SAP_kit_gaps.md): where the kit falls short of it
+  - `adr/`: the kit's design decisions
+- `Definitions/`: the trait definitions and ICD codes (`Phenotype_list.tsv`).
+- `R/`: the collaborators' scripts.
 - `kit/`: the kit's R package (`nordicepimight/`), its setup script, and the self-test's
   toy site, the rule-coverage site (`selftest/cohort_cases/`), expected results and the
-  scripts that build them. `pixi run test` tests the package; `pixi run lint` lints it,
-  `kit/setup.R` and the build scripts.
-- `container/`: the recipe and build script of the Apptainer image, for servers without
-  internet access. `.github/workflows/container.yml` builds it, runs the self-test and, on a
-  `v*` tag, attaches it to the release and pushes it to ghcr.io.
-- `R/`, `Definitions/`: the collaborators' scripts and phenotype definitions.
-- `docs/`: the glossary, design decisions (`adr/`), open questions, the statistical
-  analysis plan (SAP, `SAP_Scandinavian_Genealogy.md` and its source docx), the data
-  preparation guide (`step-0.md`), and where the kit falls short of the SAP
-  (`SAP_kit_gaps.md`).
+  scripts that build them ([kit/selftest/README.md](kit/selftest/README.md)).
+  `pixi run test` tests the package; `pixi run lint` lints it, `kit/setup.R` and the build
+  scripts.
+- `container/`: the recipe and build script of the Apptainer image (ADR 0006).
+  `.github/workflows/container.yml` builds it, runs the self-test and, on a `v*` tag,
+  attaches it to the release and pushes it to ghcr.io. To build it yourself, on Linux with
+  Apptainer and internet access: `container/build.sh`, or without Apptainer,
+  `pixi exec --spec apptainer=1.5.4 container/build.sh`. The build runs the unit tests and
+  the self-test inside the image and deletes an image that fails them.
