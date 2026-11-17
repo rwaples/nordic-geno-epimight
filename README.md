@@ -81,7 +81,9 @@ Open a new PowerShell window, so `PATH` has both installers' folders, then run t
 `git clone`, `pixi install`, `setup` and `selftest` commands above. If you already have
 rustup with its default MSVC host and no Visual Studio Build Tools, switch it with
 `rustup toolchain install 1.99.1-x86_64-pc-windows-gnu --profile minimal` and
-`rustup default 1.99.1-x86_64-pc-windows-gnu`. During `setup`, tar may report that it
+`rustup default 1.99.1-x86_64-pc-windows-gnu`. On Windows `setup` also rebuilds the Matrix
+package from CRAN's source, a few minutes more: conda-forge's Windows build of it can crash
+R on start with "32 bit pseudo relocation ... out of range". During `setup`, tar may report that it
 can't create `CLAUDE.md`: that file is a link in pedigreegraph's repository, which
 Windows can't create without Developer Mode, and the build doesn't use it.
 

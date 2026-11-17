@@ -102,6 +102,12 @@ jobs:
       - id: setup
         continue-on-error: true
         run: pixi run --locked setup
+      # After setup, which rebuilds Matrix from source: no DLL in the environment may reach
+      # another through a 32-bit pseudo-relocation, which crashes at random on load.
+      - id: relocs
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: pixi run --locked python -I ci/find_pseudo_relocs.py .pixi/envs/default
       - id: test
         continue-on-error: true
         run: pixi run --locked test
@@ -124,7 +130,8 @@ jobs:
             rust = '${{ steps.rust.outcome }}'; path = '${{ steps.path.outcome }}'
             install = '${{ steps.install.outcome }}'; pedsum = '${{ steps.pedsum.outcome }}'
             pin = '${{ steps.pin.outcome }}'; clean = '${{ steps.clean.outcome }}'
-            setup = '${{ steps.setup.outcome }}'; test = '${{ steps.test.outcome }}'
+            setup = '${{ steps.setup.outcome }}'; relocs = '${{ steps.relocs.outcome }}'
+            test = '${{ steps.test.outcome }}'
             selftest = '${{ steps.selftest.outcome }}'
           }
           $table = "| step | ${{ matrix.os }} |`n|---|---|"
