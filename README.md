@@ -61,6 +61,27 @@ computed independently. It takes about 2 minutes, prints one PASS, FAIL or SKIP 
 check, and exits 1 if any check fails. Run it before using your own data.
 `kit/selftest/README.md` describes each check.
 
+### On Windows
+
+The same route runs on 64-bit Windows, without WSL, administrator rights, Rtools or
+Visual Studio. It needs [Git for Windows](https://git-scm.com/download/win), pixi, and Rust
+from rustup with its MinGW host, which compiles pedigreegraph with the same MinGW gcc as
+R. In PowerShell:
+
+```powershell
+$env:PIXI_VERSION = "v0.84.1"; irm -useb https://pixi.sh/install.ps1 | iex
+Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
+& $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --profile minimal
+```
+
+Open a new PowerShell window, so `PATH` has both installers' folders, then run the
+`git clone`, `pixi install`, `setup` and `selftest` commands above. If you already have
+rustup with its default MSVC host and no Visual Studio Build Tools, switch it with
+`rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal` and
+`rustup default stable-x86_64-pc-windows-gnu`. During `setup`, tar may report that it
+can't create `CLAUDE.md`: that file is a link in pedigreegraph's repository, which
+Windows can't create without Developer Mode, and the build doesn't use it.
+
 ### On a server without internet access
 
 The install above downloads software, so it can't run on a server without internet

@@ -1,6 +1,11 @@
 # Runs the pixi route (install, setup, unit tests, self-test) on Windows, with Linux on the
 # same steps as a control. Every step runs even after one fails, so one run lists every
 # failure; the last step fails the job if any did.
+#
+# The Windows runner has Visual Studio, Rtools, Strawberry Perl's gcc and Git's Unix tools,
+# none of which a site's Windows machine needs to have. Before setup, the Windows job cuts
+# PATH down to Windows itself, pixi, rustup's MinGW Rust and git, and hides Rtools from
+# pkgbuild, so the build uses only what the README's Windows install provides.
 name: windows
 
 on:
@@ -24,6 +29,9 @@ jobs:
       GITHUB_PAT: ${{ github.token }}
       # testthat's progress reporter quits after 10 failures; run every test file.
       TESTTHAT_MAX_FAILS: Inf
+      # pedigree-graph's windows-r branch, which has the Windows build (unreleased). The
+      # Windows job pins pedigreegraph to it, so setup builds it as a site's setup would.
+      PG_WINDOWS_COMMIT: eea9565c7567242a09c0ce0ac2717bfb606460b7
     steps:
       - uses: actions/checkout@v7
         with:
@@ -32,6 +40,11 @@ jobs:
         with:
           pixi-version: v0.84.1
           run-install: false
+      - name: Rust with the MinGW host
+        if: runner.os == 'Windows'
+        run: |
+          rustup toolchain install stable-x86_64-pc-windows-gnu --profile minimal
+          rustup default stable-x86_64-pc-windows-gnu
       - id: install
         continue-on-error: true
         run: pixi install --locked
@@ -48,20 +61,40 @@ jobs:
           git apply --verbose --directory="$(realpath --relative-to=. "$site")" ci/pedsum/memory.patch
           grep -q '_STATM = Path' "$site/pedsum/memory.py"
           pixi run --locked python -I -c "import pedsum.memory"
-      # Windows only: pedigreegraph from its pin with ci/pedigreegraph/Makevars.win laid
-      # over it, stamped with the pin's commit so setup keeps it.
-      - id: pedigreegraph
+      - id: pin
         if: runner.os == 'Windows'
         continue-on-error: true
         shell: bash
         run: |
-          commit=$(sed -n '/^pedigreegraph:/,/^[a-z]/s/^  commit: //p' kit/nordicepimight/inst/pins.yaml)
-          pg="$(cygpath -m "$RUNNER_TEMP")/pedigree-graph"
-          git clone --quiet https://github.com/rwaples/pedigree-graph "$pg"
-          git -C "$pg" checkout --quiet "$commit"
-          cp ci/pedigreegraph/Makevars.win "$pg/r/src/"
-          printf 'RemoteSha: %s\n' "$commit" >> "$pg/r/DESCRIPTION"
-          pixi run --locked R CMD INSTALL "$pg/r"
+          pins=kit/nordicepimight/inst/pins.yaml
+          sed -i "/^pedigreegraph:/,/^[a-z]/s/^  commit: .*/  commit: $PG_WINDOWS_COMMIT/" "$pins"
+          grep -q "^  commit: $PG_WINDOWS_COMMIT" "$pins"
+      - name: Cut PATH down to a clean machine's
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $keep = "$env:SystemRoot\System32", $env:SystemRoot, "$env:SystemRoot\System32\Wbem",
+            "$env:SystemRoot\System32\WindowsPowerShell\v1.0", "$env:ProgramFiles\Git\cmd",
+            (Split-Path (Get-Command pwsh).Source), (Split-Path (Get-Command pixi).Source),
+            (Split-Path (Get-Command cargo).Source)
+          "PATH=$($keep -join ';')" >> $env:GITHUB_ENV
+          # pkgbuild looks for Rtools in these folders whatever PATH holds.
+          "RTOOLS45_HOME=C:\no-rtools" >> $env:GITHUB_ENV
+          "RTOOLS44_HOME=C:\no-rtools" >> $env:GITHUB_ENV
+      - id: clean
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          foreach ($tool in 'sh', 'bash', 'gcc', 'make', 'link', 'Rscript') {
+            $found = Get-Command $tool -ErrorAction SilentlyContinue
+            if ($found) { throw "$tool is on PATH: $($found.Source)" }
+          }
+          $host_line = rustc -vV | Select-String '^host: '
+          $host_line.Line
+          if ($host_line.Line -ne 'host: x86_64-pc-windows-gnu') { throw 'rustc is not the MinGW host' }
+          pixi run --locked Rscript -e "pkgbuild::check_build_tools(debug = TRUE)"
+          if ($LASTEXITCODE -ne 0) { throw 'pkgbuild finds no working compiler in the pixi environment' }
       - id: setup
         continue-on-error: true
         run: pixi run --locked setup
@@ -80,17 +113,21 @@ jobs:
           retention-days: 7
       - name: Outcome
         if: always()
-        shell: bash
-        # A skipped step (pedigreegraph on Linux) counts as passed.
+        shell: pwsh
+        # A skipped step (the Windows-only ones on Linux) counts as passed.
         run: |
-          status=0
-          table="| step | ${{ matrix.os }} |"$'\n'"|---|---|"
-          for pair in "install=${{ steps.install.outcome }}" "pedsum=${{ steps.pedsum.outcome }}" \
-                      "pedigreegraph=${{ steps.pedigreegraph.outcome }}" \
-                      "setup=${{ steps.setup.outcome }}" "test=${{ steps.test.outcome }}" \
-                      "selftest=${{ steps.selftest.outcome }}"; do
-            table+=$'\n'"| ${pair%%=*} | ${pair#*=} |"
-            case "${pair#*=}" in success | skipped) ;; *) status=1 ;; esac
-          done
-          echo "$table" | tee -a "$GITHUB_STEP_SUMMARY"
-          exit $status
+          $steps = [ordered]@{
+            install = '${{ steps.install.outcome }}'; pedsum = '${{ steps.pedsum.outcome }}'
+            pin = '${{ steps.pin.outcome }}'; clean = '${{ steps.clean.outcome }}'
+            setup = '${{ steps.setup.outcome }}'; test = '${{ steps.test.outcome }}'
+            selftest = '${{ steps.selftest.outcome }}'
+          }
+          $table = "| step | ${{ matrix.os }} |`n|---|---|"
+          $failed = $false
+          foreach ($step in $steps.GetEnumerator()) {
+            $table += "`n| $($step.Key) | $($step.Value) |"
+            if ($step.Value -notin 'success', 'skipped') { $failed = $true }
+          }
+          $table
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $table
+          if ($failed) { exit 1 }

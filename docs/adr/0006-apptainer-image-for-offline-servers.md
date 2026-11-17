@@ -38,6 +38,7 @@ to it. A site imports the file like any other and runs the kit with `apptainer r
   routes run the same lock file and pins.
 - The image keeps the Rust and C toolchains that `setup` needs, so it is about 1 GB, larger than
   it must be. Removing them would make the image differ from the locked environment.
-- A server needs Apptainer or Singularity and Linux. A Windows remote desktop, such as
-  Statistics Sweden's MONA, can run neither route.
+- A server needs Apptainer or Singularity and Linux. The pixi route also runs on Windows
+  (README, On Windows), but `pixi install` and `setup` download software, so an offline
+  Windows remote desktop, such as Statistics Sweden's MONA, can still run neither route.
 - A plan change means a new image, where the pixi route needs only `git pull`.
