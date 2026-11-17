@@ -31,7 +31,7 @@ jobs:
       TESTTHAT_MAX_FAILS: Inf
       # pedigree-graph's windows-r branch, which has the Windows build (unreleased). The
       # Windows job pins pedigreegraph to it, so setup builds it as a site's setup would.
-      PG_WINDOWS_COMMIT: eea9565c7567242a09c0ce0ac2717bfb606460b7
+      PG_WINDOWS_COMMIT: ba42ea42c58976b3c45bd90e747b82ed58f2cd2a
     steps:
       - uses: actions/checkout@v7
         with:
