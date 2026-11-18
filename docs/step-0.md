@@ -76,6 +76,8 @@ other relatives. **[SAP 4.1]**
   `9999`, with a missing value, or let pedsum do it (1.4). **[kit]**
 - **Twins.** If your register records multiple births, put them in the `multiple_birth_id` column
   and set `multiple_birth_column: multiple_birth_id` in your site file. **[recommended]**
+  pedsum clears a set whose members are not all full siblings or whose births are more
+  than 7 days apart, and reports it.
   The kit leaves same-sex pairs from one multiple birth, and pairs with an unknown sex,
   out of FS as possible MZ twins. Boy-girl pairs stay full siblings. **[SAP 4.1]**
   Don't remove twins from the pedigree.
@@ -90,12 +92,12 @@ Run pedsum validate (old: `python pedigree_summary.py validate`):
 
 ```sh
 pixi run pedsum validate --in pedigree.tsv --out pedsum/ --birth-year-col birth_year \
-  --birth-date-col birth_date --twin-max-days 30 \
+  --birth-date-col birth_date --twin-max-days 1 \
   --max-children-mother 20 --max-children-father 50
 gunzip -c pedsum/validate.tsv.gz > pedigree_validated.tsv
 ```
 
-With `multiple_birth_id`, replace `--twin-max-days 30` with `--multiple-birth-col multiple_birth_id`.
+With `multiple_birth_id`, replace `--twin-max-days 1` with `--multiple-birth-col multiple_birth_id`.
 
 Then go through and resolve any issues in `pedsum/validate.log`:
 

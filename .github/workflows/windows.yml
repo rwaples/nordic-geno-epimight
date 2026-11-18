@@ -45,6 +45,8 @@ jobs:
         run: |
           version=$(sed -n 's#.*/linux-64/rust-\([0-9][0-9.]*\)-.*#\1#p' pixi.lock | head -1)
           echo "pixi.lock's rust: $version"
+          others=$(grep -o '1\.[0-9][0-9]*\.[0-9][0-9]*' docs/windows.md | sort -u | grep -vx "$version" || true)
+          [ -z "$others" ] || { echo "docs/windows.md names Rust $others, not $version"; exit 1; }
           grep -q -- "--default-toolchain $version " docs/windows.md
           rustup toolchain install "$version-x86_64-pc-windows-gnu" --profile minimal
           rustup default "$version-x86_64-pc-windows-gnu"

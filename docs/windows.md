@@ -21,14 +21,16 @@ desktop, such as Statistics Sweden's MONA, can't run the kit (ADR 0006).
 In PowerShell, as yourself (not as administrator):
 
 ```powershell
-winget install --id Git.Git -e --source winget
+winget install --id Git.Git -e --source winget --scope user
 $env:PIXI_VERSION = "v0.84.1"; irm -useb https://pixi.sh/install.ps1 | iex
 Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
 & $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain 1.99.1 --profile minimal
 ```
 
-Rust 1.99.1 is the version the Linux environment locks (`pixi.lock`), so every site
-compiles pedigreegraph with the same Rust; CI checks that this page names that version.
+Without winget, install Git for Windows from <https://git-scm.com/download/win> and choose
+"Only for me". Rust 1.99.1 is the version the Linux environment locks (`pixi.lock`), so
+every site compiles pedigreegraph with the same Rust; CI checks that every Rust version on
+this page is that one.
 
 **Close PowerShell and open a new window**, so `PATH` has the three installers' folders.
 Then check:
@@ -70,7 +72,9 @@ pixi run --locked test                    # [ FAIL 0 | WARN 0 | SKIP 0 | PASS ..
 pixi run --locked selftest selftest-out   # one PASS, FAIL or SKIP line per check
 ```
 
-The self-test must end with no FAIL; one SKIP (`cif population se_native`) is expected.
+The self-test must end with no FAIL. A SKIP line says why that check can't run, for
+example a value with no independent reference, and is not a failure;
+`kit/selftest/README.md` describes the toy site and the checks.
 Give it a folder that doesn't exist yet: it refuses one that isn't empty.
 
 ## 4. Run your study

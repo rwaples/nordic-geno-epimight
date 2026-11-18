@@ -219,8 +219,8 @@ that holds the same value for everyone born in one delivery and is empty or `NA`
 everyone else, run pedsum with `--multiple-birth-col <column>` in place of `--twin-max-days 1`,
 and name the column in the site file's `multiple_birth_column`. pedsum numbers the sets in
 its own `multiple_birth_set` column, which the kit reads.
-pedsum reports a set whose members are not all full siblings, or that has one member, as a
-finding in `pedsum/validate.log` and clears those cells, so review it before you use
+pedsum reports a set whose members are not all full siblings, that has one member, or
+whose adjacent births are more than 7 days apart, as a finding in `pedsum/validate.log` and clears those cells, so review it before you use
 `validate.tsv.gz`: a cleared member counts as a single birth.
 
 ## Inputs

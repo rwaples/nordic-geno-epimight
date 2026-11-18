@@ -63,7 +63,7 @@ rust = ">=1.85"
 
 # R on Windows builds packages with MinGW gcc and a POSIX shell, which CRAN's R gets from
 # Rtools: these are its sh, basename, sed and grep. Rust comes from rustup with the MinGW
-# host (README, On Windows): conda-forge's rust is MSVC-hosted, and its build scripts would
+# host (docs/windows.md): conda-forge's rust is MSVC-hosted, and its build scripts would
 # need Visual Studio's link.exe.
 [target.win-64.dependencies]
 m2-bash = "*"
