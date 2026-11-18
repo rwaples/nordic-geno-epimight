@@ -22,7 +22,8 @@ desktop, such as Statistics Sweden's MONA, can't run the kit (ADR 0006).
 
 ## 1. Install or update the tools
 
-In PowerShell, as yourself (not as administrator), paste this block. It works on a new
+In PowerShell, as yourself (not as administrator), paste this block. Each block on this
+page ends with an empty line, so it runs as soon as it is pasted. It works on a new
 machine and on one that already has some of the tools: it installs what is missing and
 switches pixi and Rust to the versions the kit needs.
 
@@ -49,6 +50,7 @@ if (Get-Command rustup -ErrorAction SilentlyContinue) {
   Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
   & $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain 1.99.1 --profile minimal
 }
+
 ```
 
 pixi 0.84 is the only series the kit accepts (`requires-pixi` in
@@ -64,6 +66,7 @@ check all three:
 git --version
 pixi --version                            # pixi 0.84.1
 cargo -vV | Select-String 'host|release'  # host: x86_64-pc-windows-gnu, release: 1.99.1
+
 ```
 
 If `pixi --version` still shows another version, an older pixi comes first on `PATH`:
@@ -84,6 +87,7 @@ if (Test-Path nordic-geno-epimight\.git) {
 cd nordic-geno-epimight
 pixi install --locked
 pixi run --locked setup
+
 ```
 
 `git pull --ff-only` stops if you have changed a file of the kit's own: `git status` names
@@ -102,6 +106,7 @@ already built.
 ```powershell
 pixi run --locked test                    # [ FAIL 0 | WARN 0 | SKIP 0 | PASS ... ]
 pixi run --locked selftest selftest-out   # one PASS, FAIL or SKIP line per check
+
 ```
 
 The self-test must end with no FAIL. A SKIP line says why that check can't run, for
@@ -120,6 +125,7 @@ pixi run --locked pedsum validate --in D:/data/pedigree.tsv --out D:/data/pedsum
   --birth-year-col birth_year --birth-date-col birth_date --twin-max-days 1 `
   --max-children-mother 20 --max-children-father 50
 pixi run --locked python -I -c "import gzip, shutil, sys; shutil.copyfileobj(gzip.open(sys.argv[1]), open(sys.argv[2], 'wb'))" D:/data/pedsum/validate.tsv.gz D:/data/pedigree_validated.tsv
+
 ```
 
 Put your own paths in place of `D:/data/...`; step-0.md's other options (such as
@@ -132,6 +138,7 @@ As in [run-with-pixi.md](run-with-pixi.md), from the kit's folder:
 ```powershell
 Copy-Item local\example.yaml local\mysite.yaml   # then fill it in
 pixi run --locked study local/mysite.yaml out/
+
 ```
 
 In the site file, write paths with forward slashes (`D:/register/pedigree.tsv`); R and
