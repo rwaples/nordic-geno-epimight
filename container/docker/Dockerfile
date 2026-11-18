@@ -27,7 +27,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # A full clone, so `git describe` finds the release tag; NGE_REF may be a tag, a branch or
 # a commit. The kit records the version and commit in every run.yaml. IMAGE_VERSION is
 # written after the unit tests: it marks the kit as running in an image (R/steps.R).
-RUN git clone https://github.com/rwaples/nordic-geno-epimight.git /opt/kit \
+# setup downloads EPIMIGHT and pedigreegraph through the GitHub API, which allows 60
+# anonymous requests an hour per address; a build given the secret github_pat
+# (--secret id=github_pat,env=GITHUB_PAT) uses that token, which stays out of the image.
+RUN --mount=type=secret,id=github_pat,env=GITHUB_PAT git clone https://github.com/rwaples/nordic-geno-epimight.git /opt/kit \
     && cd /opt/kit \
     && git checkout --detach "${NGE_REF}" \
     && export KIT_COMMIT=$(git rev-parse HEAD) KIT_VERSION=$(git describe --tags --always) \

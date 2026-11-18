@@ -10,7 +10,11 @@
 #   pixi exec --spec apptainer=1.5.4 container/build.sh
 # If the build stops on newuidmap or on libfakeroot.so, set APPTAINER_IGNORE_SUBUID=1 and
 # APPTAINER_IGNORE_FAKEROOT_COMMAND=1.
+# setup downloads EPIMIGHT and pedigreegraph through the GitHub API, which allows 60
+# anonymous requests an hour per address. Set GITHUB_PAT to a token to use it instead;
+# the build's %post gets it as APPTAINERENV_GITHUB_PAT, which the image does not keep.
 set -euo pipefail
+if [ -n "${GITHUB_PAT:-}" ]; then export APPTAINERENV_GITHUB_PAT=$GITHUB_PAT; fi
 
 repo=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 commit=$(git -C "$repo" rev-parse HEAD)

@@ -28,6 +28,9 @@ jobs:
       # Ubuntu 24.04 denies user namespaces to programs without an AppArmor profile.
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - name: Build and self-test
+        env:
+          # Anonymous GitHub API requests from a runner's shared address hit the limit.
+          GITHUB_PAT: ${{ github.token }}
         run: |
           $APPTAINER container/build.sh
           echo "IMAGE=$(ls nordic-geno-epimight-*.sif)" >> "$GITHUB_ENV"

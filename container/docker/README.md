@@ -98,6 +98,12 @@ docker build --build-arg NGE_REF=v0.1.0 -t biopsyk/nordic-geno-epimight:latest .
 
 The build needs internet access. It compiles EPIMIGHT and pedigreegraph and runs the kit's unit tests, taking about 5 minutes.
 
+It downloads EPIMIGHT and pedigreegraph through the GitHub API, which allows 60 anonymous requests an hour per address. On a shared address, such as a CI runner, give the build a GitHub token as a secret; it is not stored in the image:
+
+```bash
+GITHUB_PAT=<token> docker build --secret id=github_pat,env=GITHUB_PAT -t biopsyk/nordic-geno-epimight:latest .
+```
+
 ## References
 
 - [nordic-geno-epimight GitHub repository](https://github.com/rwaples/nordic-geno-epimight)

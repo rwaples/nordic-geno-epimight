@@ -28,9 +28,13 @@ jobs:
             exit 1
           fi
       - name: Build
+        env:
+          # Anonymous GitHub API requests from a runner's shared address hit the limit.
+          GITHUB_PAT: ${{ github.token }}
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then ref=(); else ref=(--build-arg "NGE_REF=$GITHUB_SHA"); fi
-          docker build "${ref[@]}" -t nordic-geno-epimight:ci container/docker
+          docker build "${ref[@]}" --secret id=github_pat,env=GITHUB_PAT \
+            -t nordic-geno-epimight:ci container/docker
       - name: Run as a collaborator would
         run: |
           set -euo pipefail
