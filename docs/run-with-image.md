@@ -6,10 +6,8 @@ repository. It needs Apptainer or Singularity (the commands are the same with
 `singularity` in place of `apptainer`). A Windows remote desktop, such as MONA, can't run
 it.
 
-> **The image is not released yet.** The first release will put
-> `nordic-geno-epimight-<version>.sif` (about 1 GB) and its `.sha256` file on the
-> [releases page](https://github.com/rwaples/nordic-geno-epimight/releases). Until then
-> you can read this page and prepare your data (step 4).
+Each release puts `nordic-geno-epimight-<version>.sif` (about 1 GB) and its `.sha256`
+file on the [releases page](https://github.com/rwaples/nordic-geno-epimight/releases).
 
 Below, `IMAGE` stands for the path of the `.sif` file.
 

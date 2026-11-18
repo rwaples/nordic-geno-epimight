@@ -17,8 +17,8 @@ Current status: **preliminary**.
    - a server with internet access: [docs/run-with-pixi.md](docs/run-with-pixi.md); on
      64-bit Windows, [docs/windows.md](docs/windows.md) first;
    - a server without internet access, such as TSD:
-     [docs/run-with-image.md](docs/run-with-image.md). The Apptainer image is not released
-     yet.
+     [docs/run-with-image.md](docs/run-with-image.md), with the Apptainer image from the
+     [releases page](https://github.com/rwaples/nordic-geno-epimight/releases).
 3. **Send the folder `out/6_export/`**, and nothing else. It holds the results with small
    counts suppressed. Everything else the kit writes holds individual-level data or
    unsuppressed counts and stays on your server. [docs/outputs.md](docs/outputs.md) describes every output and what to
