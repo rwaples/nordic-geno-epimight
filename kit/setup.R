@@ -42,6 +42,12 @@ rebuild_matrix_on_windows <- function() {
   if (.Platform$OS.type != "windows") {
     return(invisible())
   }
+  # Gone when a rebuild was stopped partway, for example by closing the window.
+  if (!nzchar(system.file(package = "Matrix"))) {
+    stop(paste("Matrix is missing from the pixi environment, most likely because its rebuild",
+               "was stopped. Run `pixi reinstall r-matrix`, then `pixi run setup` again."),
+         call. = FALSE)
+  }
   stamp <- function() file.path(find.package("Matrix"), "kit-built-from-source")
   built <- function() utils::packageDescription("Matrix")$Built
   version <- utils::packageDescription("Matrix")$Version

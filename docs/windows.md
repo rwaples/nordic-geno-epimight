@@ -170,6 +170,7 @@ and the next call works.
 | `Rtools is required to build R packages` and `'{' is not recognized` | The environment's shell tools are missing | `pixi install --locked` again in the kit's folder |
 | `could not find pixi.toml` | PowerShell is not in the kit's folder | `cd $HOME\nordic-geno-epimight` |
 | `Mingw-w64 runtime failure: 32 bit pseudo relocation ... out of range` | A DLL with 32-bit pseudo-relocations | Rerun `setup`, then run `pixi run --locked python -I ci/find_pseudo_relocs.py .pixi/envs/default` and report what it lists |
+| `Matrix is missing from the pixi environment`, or `$ operator is invalid for atomic vectors` after `building Matrix` | A Matrix rebuild was stopped partway | `pixi reinstall r-matrix`, then `pixi run --locked setup` |
 | `Matrix ... did not build from CRAN's source` | CRAN couldn't be reached | Check internet access, then rerun `setup` |
 | `This project requires pixi ...` | Another pixi version is running | Step 1's block again; then the `Get-Command pixi -All` check |
 | `Filename too long` or a build error naming a path over 260 characters | Windows' path limit | Clone the kit nearer the drive's root, for example `C:\nge` |
