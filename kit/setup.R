@@ -66,14 +66,36 @@ rebuild_matrix_on_windows <- function() {
   }
   message(sprintf(paste("building Matrix %s from CRAN's source",
                         "(conda-forge's Windows build can crash on load)"), version))
-  was <- built()
+  # Built in a folder of its own, so a build that fails or crashes leaves conda's Matrix
+  # in place; it replaces conda's only once it is complete.
+  staging <- tempfile("matrix-build-")
+  dir.create(staging)
+  on.exit(unlink(staging, recursive = TRUE), add = TRUE)
   # remotes returns NA, not an error, when the download fails.
   installed <- remotes::install_version("Matrix", version, repos = "https://cloud.r-project.org",
-                                        dependencies = FALSE, upgrade = "never", quiet = FALSE)
-  if (!identical(unname(installed), "Matrix") || identical(built(), was) ||
-        !identical(utils::packageDescription("Matrix")$Version, version)) {
-    stop(sprintf("Matrix %s did not build from CRAN's source", version), call. = FALSE)
+                                        lib = staging, dependencies = FALSE, upgrade = "never",
+                                        quiet = FALSE)
+  new <- suppressWarnings(utils::packageDescription("Matrix", lib.loc = staging))
+  if (!identical(unname(installed), "Matrix") || !is.list(new) ||
+        !identical(new$Version, version)) {
+    stop(sprintf(paste("Matrix %s did not build from CRAN's source; conda's build is still",
+                       "installed. The end of the output above says why."), version),
+         call. = FALSE)
   }
+  target <- file.path(env_lib, "Matrix")
+  aside <- paste0(target, ".conda")
+  unlink(aside, recursive = TRUE)
+  if (!file.rename(target, aside)) {
+    stop(sprintf("can't move %s aside to replace it; close any R that has Matrix loaded",
+                 target), call. = FALSE)
+  }
+  if (!file.copy(file.path(staging, "Matrix"), env_lib, recursive = TRUE)) {
+    unlink(target, recursive = TRUE)
+    file.rename(aside, target)
+    stop(sprintf("can't copy the built Matrix into %s; conda's build is back", env_lib),
+         call. = FALSE)
+  }
+  unlink(aside, recursive = TRUE)
   writeLines(built(), stamp())
 }
 
