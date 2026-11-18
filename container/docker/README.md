@@ -11,7 +11,7 @@ The image holds the kit, all its software and the shared analysis plan, so it ru
 ## Version Information
 
 - Internal image version: 1.0.0
-- Kit version: release tag `NGE_REF` (default `v0.1.0`). The tag and commit are in `/opt/kit/IMAGE_VERSION`, and every run records them in its `run.yaml`
+- Kit version: release tag `NGE_REF` (default `v0.1.1`). The tag and commit are in `/opt/kit/IMAGE_VERSION`, and every run records them in its `run.yaml`
 - EPIMIGHT, pedigreegraph and pedsum: the versions the kit pins (`/opt/kit/kit/nordicepimight/inst/pins.yaml`, `/opt/kit/pixi.toml`)
 - R 4.5 and Python, from the kit's `pixi.lock`
 - Architecture: amd64 only (the lock file covers linux-64)
@@ -93,7 +93,7 @@ docker build -t biopsyk/nordic-geno-epimight:latest .
 To build another kit release, tag or commit:
 
 ```bash
-docker build --build-arg NGE_REF=v0.1.0 -t biopsyk/nordic-geno-epimight:latest .
+docker build --build-arg NGE_REF=v0.1.1 -t biopsyk/nordic-geno-epimight:latest .
 ```
 
 The build needs internet access. It compiles EPIMIGHT and pedigreegraph and runs the kit's unit tests, taking about 5 minutes.
