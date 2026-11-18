@@ -59,6 +59,7 @@ to it. A site imports the file like any other and runs the kit with `apptainer r
   Windows remote desktop, such as Statistics Sweden's MONA, can still run neither route.
 - A plan change means a new image, where the pixi route needs only `git pull`.
 - Two recipes run the same install and must change together. The copy in imagelib
-  follows `container/docker/` by hand, at each release.
+  follows `container/docker/` by hand, at each release
+  ([docs/releasing.md](../releasing.md)).
 - The Docker image is amd64 only, as `pixi.lock` covers linux-64. It uses imagelib's
   `FROM --platform=linux/amd64`, as imagelib's regenie image does.

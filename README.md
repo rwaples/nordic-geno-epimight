@@ -49,6 +49,7 @@ Your data preparation is "step 0": the kit has no command for it.
   - [outputs.md](docs/outputs.md): the outputs, the folder to share, and what to do when a run stops
   - [glossary.md](docs/glossary.md): the terms used here (proband, stratum, sandwich SE, ...)
   - [open-questions.md](docs/open-questions.md): questions for the collaborators
+  - [releasing.md](docs/releasing.md): cutting a release and publishing its images, through imagelib for Docker Hub
   - `SAP_Scandinavian_Genealogy.md` (and its source docx): the statistical analysis plan,
     version 8; [SAP_kit_gaps.md](docs/SAP_kit_gaps.md): where the kit falls short of it
   - `adr/`: the kit's design decisions
