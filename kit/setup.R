@@ -7,6 +7,15 @@
 
 pinned <- yaml::read_yaml("kit/nordicepimight/inst/pins.yaml")
 
+# Everything below installs into .libPaths()[1], which must be this environment's library
+# (pixi.toml sets R_LIBS_USER=NULL); a library ahead of it would take the installs.
+env_lib <- normalizePath(R.home("library"), winslash = "/")
+if (!identical(normalizePath(.libPaths()[1], winslash = "/"), env_lib)) {
+  stop(sprintf(paste("R would install into %s, not this environment's library %s. Run",
+                     "setup with `pixi run setup`, and take R_LIBS out of ~/.Renviron."),
+               .libPaths()[1], env_lib), call. = FALSE)
+}
+
 built_from <- function(pkg) {
   desc <- suppressWarnings(utils::packageDescription(pkg))
   if (is.list(desc)) desc$RemoteSha %||% NA_character_ else NA_character_
@@ -42,11 +51,11 @@ rebuild_matrix_on_windows <- function() {
   if (.Platform$OS.type != "windows") {
     return(invisible())
   }
-  # Gone when a rebuild was stopped partway, for example by closing the window.
-  if (!nzchar(system.file(package = "Matrix"))) {
-    stop(paste("Matrix is missing from the pixi environment, most likely because its rebuild",
-               "was stopped. Run `pixi reinstall r-matrix`, then `pixi run setup` again."),
-         call. = FALSE)
+  # Missing or half-written when a rebuild was stopped partway.
+  if (!is.list(suppressWarnings(utils::packageDescription("Matrix", lib.loc = env_lib)))) {
+    stop(paste("Matrix is missing or broken in the pixi environment, most likely because its",
+               "rebuild was stopped. Delete", file.path(env_lib, "Matrix"), "and run",
+               "`pixi reinstall r-matrix`, then `pixi run setup` again."), call. = FALSE)
   }
   stamp <- function() file.path(find.package("Matrix"), "kit-built-from-source")
   built <- function() utils::packageDescription("Matrix")$Built

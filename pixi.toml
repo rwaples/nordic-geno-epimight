@@ -45,6 +45,12 @@ python = "3.14.*"
 [pypi-dependencies]
 pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.18.0" }
 
+# Only this environment's R library. R's per-user library would come first, and on Windows
+# it is the folder a separately installed R uses: setup would install into it and the
+# kit would load whatever that R put there. NULL names no folder, so R drops it.
+[activation.env]
+R_LIBS_USER = "NULL"
+
 [tasks]
 setup = { cmd = "Rscript kit/setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }
 check = { cmd = "Rscript -e 'nordicepimight::main(\"check\")'", description = "Step 1: check the inputs (pixi run check SITE.yaml OUT/)" }
