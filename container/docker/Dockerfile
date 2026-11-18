@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.10
 # nordic-geno-epimight: the kit that runs EPIMIGHT across the Nordic registers
 # Upstream: https://github.com/rwaples/nordic-geno-epimight (release tag NGE_REF)
 #
@@ -30,6 +31,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # setup downloads EPIMIGHT and pedigreegraph through the GitHub API, which allows 60
 # anonymous requests an hour per address; a build given the secret github_pat
 # (--secret id=github_pat,env=GITHUB_PAT) uses that token, which stays out of the image.
+# The secret's env= option needs Dockerfile syntax 1.10, which the first line selects.
 RUN --mount=type=secret,id=github_pat,env=GITHUB_PAT git clone https://github.com/rwaples/nordic-geno-epimight.git /opt/kit \
     && cd /opt/kit \
     && git checkout --detach "${NGE_REF}" \
