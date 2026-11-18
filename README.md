@@ -64,28 +64,9 @@ check, and exits 1 if any check fails. Run it before using your own data.
 ### On Windows
 
 The same route runs on 64-bit Windows, without WSL, administrator rights, Rtools or
-Visual Studio. It needs [Git for Windows](https://git-scm.com/download/win), pixi, and Rust
-from rustup with its MinGW host, which compiles pedigreegraph with the same MinGW gcc as
-R. In PowerShell:
-
-```powershell
-$env:PIXI_VERSION = "v0.84.1"; irm -useb https://pixi.sh/install.ps1 | iex
-Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
-& $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain 1.99.1 --profile minimal
-```
-
-Rust 1.99.1 is the version the Linux environment locks, so every site compiles
-pedigreegraph with the same Rust.
-
-Open a new PowerShell window, so `PATH` has both installers' folders, then run the
-`git clone`, `pixi install`, `setup` and `selftest` commands above. If you already have
-rustup with its default MSVC host and no Visual Studio Build Tools, switch it with
-`rustup toolchain install 1.99.1-x86_64-pc-windows-gnu --profile minimal` and
-`rustup default 1.99.1-x86_64-pc-windows-gnu`. On Windows `setup` also rebuilds the Matrix
-package from CRAN's source, a few minutes more: conda-forge's Windows build of it can crash
-R on start with "32 bit pseudo relocation ... out of range". During `setup`, tar may report that it
-can't create `CLAUDE.md`: that file is a link in pedigreegraph's repository, which
-Windows can't create without Developer Mode, and the build doesn't use it.
+Visual Studio. It also needs Git for Windows and Rust from rustup with its MinGW host;
+[docs/windows.md](docs/windows.md) has the install, a first run and what to do when it
+fails.
 
 ### On a server without internet access
 

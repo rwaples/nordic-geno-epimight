@@ -5,7 +5,7 @@
 # The Windows runner has Visual Studio, Rtools, Strawberry Perl's gcc and Git's Unix tools,
 # none of which a site's Windows machine needs to have. Before setup, the Windows job cuts
 # PATH down to Windows itself, pixi, rustup's MinGW Rust and git, and hides Rtools from
-# pkgbuild, so the build uses only what the README's Windows install provides.
+# pkgbuild, so the build uses only what docs/windows.md's install provides.
 name: windows
 
 on:
@@ -37,7 +37,7 @@ jobs:
         with:
           pixi-version: v0.84.1
           run-install: false
-      # linux-64's locked rust (pixi.lock), which the README's Windows install must name too.
+      # linux-64's locked rust (pixi.lock), which docs/windows.md must name too.
       - id: rust
         if: runner.os == 'Windows'
         continue-on-error: true
@@ -45,7 +45,7 @@ jobs:
         run: |
           version=$(sed -n 's#.*/linux-64/rust-\([0-9][0-9.]*\)-.*#\1#p' pixi.lock | head -1)
           echo "pixi.lock's rust: $version"
-          grep -q -- "--default-toolchain $version " README.md
+          grep -q -- "--default-toolchain $version " docs/windows.md
           rustup toolchain install "$version-x86_64-pc-windows-gnu" --profile minimal
           rustup default "$version-x86_64-pc-windows-gnu"
       - id: install
