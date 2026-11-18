@@ -13,27 +13,58 @@ TOP_LEVEL_OUTPUTS <- list(
 
 step_dir <- function(out, step) file.path(out, STEP_DIRS[[step]])
 
-# The Apptainer image sets KIT_IN_IMAGE (container/nordicepimight.def), so messages name
-# the command the user ran: `pixi run` from a checkout, `apptainer run IMAGE` in the image.
-in_image <- function() nzchar(Sys.getenv("KIT_IN_IMAGE"))
-kit_command <- function(image = in_image()) if (image) "apptainer run IMAGE" else "pixi run"
+# Both images write /opt/kit/IMAGE_VERSION, which marks the kit as running in an image.
+# Each also sets KIT_COMMAND to what its users type before a command, which messages name:
+# `apptainer run IMAGE` in the Apptainer image (container/nordicepimight.def) and
+# `nordicepimight` in the Docker image (container/docker/Dockerfile). From a checkout it is
+# `pixi run`.
+IMAGE_MARKER <- "/opt/kit/IMAGE_VERSION"
+in_image <- function() file.exists(IMAGE_MARKER)
+kit_command <- function(command = Sys.getenv("KIT_COMMAND"), image = in_image()) {
+  if (nzchar(command)) command else if (image) "nordicepimight" else "pixi run"
+}
 
-# Inside the image the kit sees only the home folder, the current folder, /tmp and the
-# folders named with --bind, so a file that exists on the server can look missing. A link
-# is followed inside the image, so its target must be bound, not the folder the link is in.
-BIND_HINT <- paste(
-  "The image sees only your home folder, the current folder, /tmp and the folders you",
-  "name with --bind. If the file or folder exists, bind the folder it is in:",
-  "apptainer run --bind /path/to/folder IMAGE ...",
-  "If the path is a link, or passes through one, bind the folder the link points to."
-)
+# The runtime the image runs in, which decides what the user can see from it. Apptainer
+# and Singularity set these variables in every container, including one pulled from the
+# Docker image.
+container_runtime <- function(vars = Sys.getenv(c("APPTAINER_CONTAINER",
+                                                  "SINGULARITY_CONTAINER"))) {
+  if (any(nzchar(vars))) "apptainer" else "docker"
+}
+
+# Inside an image a file that exists on the server can look missing. Apptainer shows the
+# home folder, the current folder, /tmp and the folders named with --bind; Docker shows
+# only the folders mounted with -v. A link is followed inside the image, so its target must
+# be bound, not the folder the link is in. The example is the command the user typed:
+# `apptainer run --bind ... IMAGE` for the Apptainer image, `apptainer exec --bind ...
+# IMAGE nordicepimight` for the Docker image pulled into Apptainer or Singularity.
+bind_hint <- function(runtime = container_runtime(), command = kit_command()) {
+  if (runtime == "apptainer") {
+    example <- if (startsWith(command, "apptainer run")) {
+      "apptainer run --bind /path/to/folder IMAGE ..."
+    } else {
+      sprintf("apptainer exec --bind /path/to/folder IMAGE %s ...", command)
+    }
+    return(paste(
+      "The image sees only your home folder, the current folder, /tmp and the folders you",
+      "name with --bind. If the file or folder exists, bind the folder it is in:", example,
+      "If the path is a link, or passes through one, bind the folder the link points to."
+    ))
+  }
+  paste(
+    "The container sees only the folders you mount with -v. If the file or folder exists,",
+    "mount the folder it is in at the same path:",
+    sprintf("docker run -v /path/to/folder:/path/to/folder IMAGE %s ...", command),
+    "If the path is a link, or passes through one, mount the folder the link points to."
+  )
+}
 
 # Creates an output folder. In the image, a folder that can't be created is most often
 # under a folder not bound with --bind: the image itself is read-only.
 create_out_dir <- function(dir, image = in_image()) {
   if (!dir.exists(dir) && !dir.create(dir, recursive = TRUE, showWarnings = FALSE)) {
     stop(paste(sprintf("can't create the output folder %s.", dir),
-               if (image) BIND_HINT else "Check that you may write there."), call. = FALSE)
+               if (image) bind_hint() else "Check that you may write there."), call. = FALSE)
   }
   dir
 }
@@ -61,7 +92,8 @@ step_functions <- function() {
        report = run_report, export = run_export)
 }
 
-# The commands a user can type. The image's runscript adds template, pedsum and help.
+# The commands a user can type. The images' nordicepimight command adds template, pedsum
+# and help.
 kit_commands <- function(image = in_image()) {
   c("study", STEPS, "selftest", if (image) c("template", "pedsum", "help"))
 }
@@ -78,8 +110,9 @@ site_template <- function(example) {
   # /opt/kit/plan/ is 6 characters longer than ../plan/; at least one space before a comment.
   pad <- if (plan[4] == "") "" else strrep(" ", max(1, nchar(plan[3]) - 6))
   body[i] <- paste0("plan: /opt/kit/plan/", plan[2], pad, plan[4])
-  c("# Site file for the nordic-geno-epimight image. Name with --bind every folder below",
-    "# that is not under your home folder, the current folder or /tmp.", body)
+  c("# Site file for the nordic-geno-epimight image. The image must see every folder below:",
+    "# with Apptainer, --bind those outside your home folder, the current folder and /tmp;",
+    "# with Docker, mount each with -v at the same path.", body)
 }
 
 # `pixi run <command> ...`: a step, every step in order (study), or the self-test.
@@ -136,7 +169,7 @@ run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
   study_path <- args[1]
   out <- sub("/+$", "", args[2])
   if (!file.exists(study_path)) {
-    stop(paste(sprintf("%s not found.", study_path), if (in_image()) BIND_HINT),
+    stop(paste(sprintf("%s not found.", study_path), if (in_image()) bind_hint()),
          call. = FALSE)
   }
   if (step != "check" && file.exists(file.path(step_dir(out, "check"), "DONE"))) {
@@ -145,7 +178,7 @@ run_step <- function(step, fun, args = commandArgs(trailingOnly = TRUE)) {
     if (length(gone) > 0) {
       stop(paste(sprintf("these inputs `%s check` read in %s are not found now:\n  %s",
                          kit_command(), out, paste(gone, collapse = "\n  ")),
-                 if (in_image()) paste0("\n", BIND_HINT)), call. = FALSE)
+                 if (in_image()) paste0("\n", bind_hint())), call. = FALSE)
     }
     if (length(changed) > 0) {
       stop(sprintf("these inputs differ from what `%s check` saw in %s; rerun it:\n  %s",

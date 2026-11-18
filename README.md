@@ -58,7 +58,10 @@ Your data preparation is "step 0": the kit has no command for it.
   scripts that build them ([kit/selftest/README.md](kit/selftest/README.md)).
   `pixi run test` tests the package; `pixi run lint` lints it, `kit/setup.R` and the build
   scripts.
-- `container/`: the recipe and build script of the Apptainer image (ADR 0006).
+- `container/`: the kit's command in both images (`nordicepimight`), and the recipe and
+  build script of the Apptainer image (ADR 0006). `container/docker/` is the Docker
+  image's folder in BioPsyk/imagelib's layout; `.github/workflows/docker.yml` builds it
+  from a commit and runs the self-test in it.
   `.github/workflows/container.yml` builds it, runs the self-test and, on a `v*` tag,
   attaches it to the release and pushes it to ghcr.io. To build it yourself, on Linux with
   Apptainer and internet access: `container/build.sh`, or without Apptainer,

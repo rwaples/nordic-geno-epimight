@@ -1,0 +1,54 @@
+# Builds the kit's Docker image (container/docker/, ADR 0006) from this commit and runs it
+# as a collaborator would: help, the template, the self-test as an ordinary user, and a
+# check whose data folder is not mounted. Nothing is pushed; BioPsyk/imagelib publishes
+# the image to Docker Hub from its copy of container/docker/.
+name: docker
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      # On a tag, build what imagelib builds: the Dockerfile's default NGE_REF, which must
+      # be this tag. Otherwise build this commit.
+      - name: Check the default kit release
+        if: github.ref_type == 'tag'
+        run: |
+          default=$(sed -n 's/^ARG NGE_REF=//p' container/docker/Dockerfile)
+          if [ "$default" != "$GITHUB_REF_NAME" ]; then
+            echo "container/docker/Dockerfile builds $default by default, not $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+      - name: Build
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then ref=(); else ref=(--build-arg "NGE_REF=$GITHUB_SHA"); fi
+          docker build "${ref[@]}" -t nordic-geno-epimight:ci container/docker
+      - name: Run as a collaborator would
+        run: |
+          set -euo pipefail
+          run() { docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":/data nordic-geno-epimight:ci "$@"; }
+          cd "$(mktemp -d)"
+          docker run --rm nordic-geno-epimight:ci | tee help.txt
+          grep -q "nordicepimight template" help.txt
+          docker run --rm nordic-geno-epimight:ci cat /etc/nordic-geno-epimight-version
+          run nordicepimight template > site.yaml
+          grep -q "^plan: /opt/kit/plan/initial.yaml" site.yaml
+          run nordicepimight selftest selftest-out/
+          # Only the data folder is out of sight: the pedigree is the toy one in the image.
+          sed -i -e "s#/path/to/trait/files#$PWD/not-mounted#" \
+            -e "s#/path/to/pedigree.tsv#/opt/kit/kit/selftest/toy/data/pedigree.tsv#" site.yaml
+          if run nordicepimight check site.yaml out/ > check.txt 2>&1; then
+            echo "check passed without its data folder" && exit 1
+          fi
+          cat check.txt
+          grep -q "STOP file_missing \[site.yaml\]: data_folder folder not found" check.txt
+          [ "$(grep -c "^  STOP" check.txt)" -eq 1 ]
+          grep -q "mount with -v" check.txt

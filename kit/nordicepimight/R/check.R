@@ -62,7 +62,7 @@ missing_file_hint <- function(findings, image = in_image()) {
   missing <- any(findings$code == "file_missing" |
                    (findings$code == "trait_file_missing" &
                       findings$message == "trait file not found"))
-  if (image && missing) paste0("check: ", BIND_HINT, "\n") else character()
+  if (image && missing) paste0("check: ", bind_hint(), "\n") else character()
 }
 
 plan_files <- function(study) {

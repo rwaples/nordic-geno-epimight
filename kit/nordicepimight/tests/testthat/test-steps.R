@@ -6,15 +6,16 @@ test_that("a step needs the one before it to have finished", {
   expect_true(dir.exists(begin_step(out, "cohort")))
 })
 
-test_that("an output folder that can't be created stops, pointing at --bind in the image", {
+test_that("an output folder that can't be created stops, saying what the image can see", {
   blocker <- tempfile("file")
   writeLines("x", blocker)
   out <- file.path(blocker, "out")
   expect_error(begin_step(out, "check"), "can't create the output folder")
-  expect_error(create_out_dir(out, image = TRUE), "--bind")
+  expect_error(create_out_dir(out, image = TRUE), "sees only")
   expect_error(create_out_dir(out, image = FALSE), "may write there")
   expect_error(run_selftest(out), "can't create the output folder")
-  expect_match(BIND_HINT, "link points to")
+  expect_match(bind_hint("apptainer"), "link points to")
+  expect_match(bind_hint("docker"), "link points to")
 })
 
 test_that("study and a step each name themselves in their usage", {
@@ -86,12 +87,12 @@ test_that("the image's template points at the plan in the image", {
   plan_line <- grep("^plan:", site, value = TRUE)
   original <- grep("^plan:", readLines(test_path("../../../../local/example.yaml")), value = TRUE)
   expect_equal(regexpr("#", plan_line), regexpr("#", original))
-  expect_match(site[1], "--bind")
+  expect_match(paste(site[1:3], collapse = " "), "--bind.*-v at the same path")
 
   example <- tempfile(fileext = ".yaml")
   writeLines(c("# checkout only", "site: x", "plan: ../plan/complete.yaml # tight"), example)
   site <- site_template(example)
-  expect_equal(site[-(1:2)], c("site: x", "plan: /opt/kit/plan/complete.yaml # tight"))
+  expect_equal(site[-(1:3)], c("site: x", "plan: /opt/kit/plan/complete.yaml # tight"))
   writeLines("site: x", example)
   expect_error(site_template(example), "no `plan: ../plan/...` line")
 })
@@ -99,4 +100,19 @@ test_that("the image's template points at the plan in the image", {
 test_that("the image lists its own commands", {
   expect_false("template" %in% kit_commands(image = FALSE))
   expect_contains(kit_commands(image = TRUE), c("study", "check", "template", "pedsum", "help"))
+})
+
+test_that("an image tells Apptainer from Docker and names the command the user typed", {
+  expect_equal(container_runtime(c("/x/kit.sif", "")), "apptainer")
+  expect_equal(container_runtime(c("", "/x/kit.sif")), "apptainer")
+  expect_equal(container_runtime(c("", "")), "docker")
+  expect_match(bind_hint("apptainer", "apptainer run IMAGE"),
+               "apptainer run --bind /path/to/folder IMAGE \\.\\.\\.", fixed = FALSE)
+  expect_match(bind_hint("apptainer", "nordicepimight"),
+               "apptainer exec --bind /path/to/folder IMAGE nordicepimight", fixed = TRUE)
+  expect_match(bind_hint("docker", "nordicepimight"),
+               "docker run -v /path/to/folder:/path/to/folder IMAGE nordicepimight", fixed = TRUE)
+  expect_no_match(bind_hint("docker", "nordicepimight"), "--bind")
+  expect_equal(kit_command("", image = TRUE), "nordicepimight")
+  expect_equal(kit_command("", image = FALSE), "pixi run")
 })

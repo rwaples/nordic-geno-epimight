@@ -1,0 +1,69 @@
+#!/bin/sh
+# nordicepimight COMMAND ...: the kit's one command in both images (ADR 0006). The
+# Apptainer image runs it as its runscript (`apptainer run IMAGE check ...`); the Docker
+# image puts it on PATH (`docker run ... IMAGE nordicepimight check ...`). The kit is at
+# /opt/kit; the image sets KIT_COMMAND to what its users type before a command.
+set -eu
+
+# The kit's environment, set here so both images, and the Docker image pulled into
+# Apptainer or Singularity, run with the same one. Those runtimes pass the host's
+# variables in, and a host module's R_LIBS or startup files would otherwise reach R.
+kit_env=/opt/kit/.pixi/envs/default
+export PATH="$kit_env/bin:$PATH" CONDA_PREFIX="$kit_env" LC_ALL=C.UTF-8
+export R_HOME="$kit_env/lib/R" R_LIBS='' R_LIBS_SITE='' R_LIBS_USER=/nonexistent
+export R_PROFILE=/dev/null R_PROFILE_USER=/dev/null
+export R_ENVIRON=/dev/null R_ENVIRON_USER=/dev/null
+
+usage() {
+    cmd=${KIT_COMMAND:-nordicepimight}
+    echo "nordic-geno-epimight $(cat /opt/kit/IMAGE_VERSION 2>/dev/null || echo "(version unknown)")"
+    echo
+    printf '%s %-21s %s\n' \
+        "$cmd" "study SITE.yaml OUT/" "steps 1-6 in order" \
+        "$cmd" "STEP SITE.yaml OUT/" "one step: check, cohort, epimight, tables, report or export" \
+        "$cmd" "selftest OUT/" "the kit on its toy study" \
+        "$cmd" "template > SITE.yaml" "a site file to fill in" \
+        "$cmd" "pedsum ARGS..." "pedsum, to check or repair a pedigree"
+    cat <<EOF
+
+The shared plan is in the image, at /opt/kit/plan/initial.yaml; the template names it.
+The image must see every folder the site file names: with Apptainer, --bind those
+outside your home folder, the current folder and /tmp; with Docker, mount each with -v at
+the same path. The README and docs are under /opt/kit.
+EOF
+}
+
+if [ $# -eq 0 ]; then
+    usage
+    exit 2
+fi
+command=$1
+shift
+case "$command" in
+    help | -h | --help)
+        usage
+        ;;
+    template)
+        # The template reads local/example.yaml from the working folder.
+        cd /opt/kit
+        exec Rscript -e 'nordicepimight::main("template")'
+        ;;
+    pedsum)
+        # -I keeps the host's PYTHONPATH and user site-packages out, as the kit does.
+        exec python -I -m pedsum "$@"
+        ;;
+    selftest)
+        # The self-test reads kit/selftest from the working folder.
+        if [ $# -ne 1 ]; then
+            echo "usage: ${KIT_COMMAND:-nordicepimight} selftest OUT/" >&2
+            exit 2
+        fi
+        out=$(realpath -m -- "$1")
+        cd /opt/kit
+        exec Rscript -e 'nordicepimight::main("selftest")' "$out"
+        ;;
+    *)
+        exec Rscript -e 'a <- commandArgs(TRUE); nordicepimight::main(a[1], a[-1])' \
+            "$command" "$@"
+        ;;
+esac

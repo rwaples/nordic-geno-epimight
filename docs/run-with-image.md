@@ -85,8 +85,9 @@ apptainer run IMAGE template > denmark.yaml
 prints a site file whose plan is the one in the image:
 
 ```yaml
-# Site file for the nordic-geno-epimight image. Name with --bind every folder below
-# that is not under your home folder, the current folder or /tmp.
+# Site file for the nordic-geno-epimight image. The image must see every folder below:
+# with Apptainer, --bind those outside your home folder, the current folder and /tmp;
+# with Docker, mount each with -v at the same path.
 site: Denmark                         # the name your results carry
 plan: /opt/kit/plan/initial.yaml      # the shared plan: initial.yaml, later complete.yaml
 data_folder: /path/to/trait/files     # one trait file per trait in the plan
@@ -128,6 +129,28 @@ seconds. Each `run.yaml` records the image's version and commit under `kit`.
 Send only `/path/to/out/6_export/`, after the review in
 [outputs.md](outputs.md#the-folder-to-share). Nothing else in the output folder may leave
 your server.
+
+## With the Docker image instead
+
+The same kit is on Docker Hub as `biopsyk/nordic-geno-epimight` (amd64), for servers that
+can reach it. Singularity or Apptainer can pull it as a `.sif`; the commands are then
+`exec IMAGE nordicepimight <command>`, where this page has `run IMAGE <command>`:
+
+```sh
+singularity pull docker://biopsyk/nordic-geno-epimight:<version>
+singularity exec --bind /path/to/data nordic-geno-epimight_<version>.sif \
+  nordicepimight check denmark.yaml /path/to/out/
+```
+
+With Docker itself, mount each folder at its own path and run as yourself:
+
+```sh
+docker run --rm --user "$(id -u):$(id -g)" -v "$PWD":"$PWD" -w "$PWD" \
+  -v /path/to/data:/path/to/data biopsyk/nordic-geno-epimight:<version> \
+  nordicepimight study denmark.yaml out/
+```
+
+[container/docker/README.md](../container/docker/README.md) has more examples.
 
 ## Later: the complete plan
 

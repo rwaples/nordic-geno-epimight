@@ -21,65 +21,23 @@ From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0
     # The image is read-only, so fontconfig can't write its cache when a plot needs it.
     pixi run --locked fc-cache -f
     rm -rf "$PIXI_CACHE_DIR" "$CARGO_HOME" /root/.cache
+    echo "{{ KIT_VERSION }} ({{ KIT_COMMIT }})" > /opt/kit/IMAGE_VERSION
+    install -m 0755 /opt/kit/container/nordicepimight /usr/local/bin/nordicepimight
 
 %environment
-    export PATH=/opt/kit/.pixi/envs/default/bin:$PATH
-    export CONDA_PREFIX=/opt/kit/.pixi/envs/default
-    export LC_ALL=C.UTF-8
-    # The kit's messages name `apptainer run IMAGE` and point at --bind when this is set.
-    export KIT_IN_IMAGE=1
-    # Apptainer passes the host's variables and home folder in. Keep the host's R
-    # libraries and startup files out of the run. Each variable is set, not unset:
-    # Apptainer puts the host's value back for any variable left unset here.
-    export R_HOME=/opt/kit/.pixi/envs/default/lib/R
-    export R_LIBS= R_LIBS_SITE= R_LIBS_USER=/nonexistent
-    export R_PROFILE=/dev/null R_PROFILE_USER=/dev/null
-    export R_ENVIRON=/dev/null R_ENVIRON_USER=/dev/null
+    # What users type before a command; the kit's messages name it (R/steps.R). The
+    # kit's own environment, R's isolation from the host included, is set by
+    # container/nordicepimight, which every command runs through.
+    export KIT_COMMAND="apptainer run IMAGE"
 
 %runscript
-    usage() {
-        cat /.singularity.d/runscript.help
-    }
-    if [ $# -eq 0 ]; then
-        usage
-        exit 2
-    fi
-    command=$1
-    shift
-    case "$command" in
-        help | -h | --help)
-            usage
-            ;;
-        template)
-            # The template reads local/example.yaml from the working folder.
-            cd /opt/kit
-            exec Rscript -e 'nordicepimight::main("template")'
-            ;;
-        pedsum)
-            # -I keeps the host's PYTHONPATH and user site-packages out, as the kit does.
-            exec python -I -m pedsum "$@"
-            ;;
-        selftest)
-            # The self-test reads kit/selftest from the working folder.
-            if [ $# -ne 1 ]; then
-                echo "usage: apptainer run IMAGE selftest OUT/" >&2
-                exit 2
-            fi
-            out=$(realpath -m -- "$1")
-            cd /opt/kit
-            exec Rscript -e 'nordicepimight::main("selftest")' "$out"
-            ;;
-        *)
-            exec Rscript -e 'a <- commandArgs(TRUE); nordicepimight::main(a[1], a[-1])' \
-                "$command" "$@"
-            ;;
-    esac
+    # The kit's one command, shared with the Docker image (container/nordicepimight).
+    exec /usr/local/bin/nordicepimight "$@"
 
 %test
     out=$(mktemp -d)
     trap 'rm -rf "$out"' EXIT
-    cd /opt/kit
-    Rscript -e 'nordicepimight::main("selftest")' "$out/selftest"
+    nordicepimight selftest "$out/selftest"
 
 %labels
     kit.source https://github.com/rwaples/nordic-geno-epimight
@@ -89,13 +47,14 @@ From: ghcr.io/prefix-dev/pixi@sha256:022f8a2ca2fa6c226461b6b4b07ac7287bf9feb1db0
 %help
     nordic-geno-epimight {{ KIT_VERSION }} ({{ KIT_COMMIT }})
 
-    apptainer run IMAGE study SITE.yaml OUT/     steps 1-6 in order
-    apptainer run IMAGE STEP SITE.yaml OUT/      one step: check, cohort, epimight, tables,
-                                                 report or export
-    apptainer run IMAGE selftest OUT/            the kit on its toy study
-    apptainer run IMAGE template > SITE.yaml     a site file to fill in
-    apptainer run IMAGE pedsum ARGS...           pedsum, to check or repair a pedigree
+    apptainer run IMAGE study SITE.yaml OUT/   steps 1-6 in order
+    apptainer run IMAGE STEP SITE.yaml OUT/    one step: check, cohort, epimight, tables,
+                                               report or export
+    apptainer run IMAGE selftest OUT/          the kit on its toy study
+    apptainer run IMAGE template > SITE.yaml   a site file to fill in
+    apptainer run IMAGE pedsum ARGS...         pedsum, to check or repair a pedigree
+    apptainer run IMAGE help                   these commands
 
     The shared plan is in the image, at /opt/kit/plan/initial.yaml; the template names it.
-    Bind the folders your site file names with --bind. The README and docs are under
-    /opt/kit.
+    Bind with --bind every folder the site file names outside your home folder, the
+    current folder and /tmp. The README and docs are under /opt/kit.
