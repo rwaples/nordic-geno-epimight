@@ -107,4 +107,4 @@ The build needs internet access. It compiles EPIMIGHT and pedigreegraph and runs
 
 ## License
 
-See the LICENSE file in the nordic-geno-epimight repository.
+MIT; see `kit/nordicepimight/LICENSE` in the nordic-geno-epimight repository.
