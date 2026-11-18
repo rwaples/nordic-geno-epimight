@@ -108,6 +108,8 @@ pixi run pedsum validate --in /path/to/data/pedigree.tsv --out /path/to/data/ped
 gunzip -c /path/to/data/pedsum/validate.tsv.gz > /path/to/data/pedigree_validated.tsv
 ```
 
+In PowerShell on Windows, use the same commands from [windows.md](windows.md#4-step-0-in-powershell).
+
 With `multiple_birth_id`, replace `--twin-max-days 1` with
 `--multiple-birth-col multiple_birth_id`. If your register writes unknown parents as `0`
 or another code, add `--missing-parent-token <code>`.

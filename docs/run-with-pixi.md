@@ -22,7 +22,7 @@ pixi --version
 
 The installer also adds `~/.pixi/bin` to `PATH` in your shell's startup file. If
 `pixi --version` fails in a new terminal, add the `export` line there yourself. If you
-already have pixi at another version, switch with `pixi self-update --version v0.84.1`.
+already have pixi at another version, switch with `pixi self-update --version 0.84.1`.
 
 ## 2. Install the kit
 

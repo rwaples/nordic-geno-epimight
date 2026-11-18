@@ -12,54 +12,84 @@ What Windows needs that Linux gets from pixi alone:
   conda-forge's) can only link with Visual Studio's `link.exe`. The MinGW host links with
   the same MinGW gcc that the pixi environment gives R.
 
-The machine needs internet access for the install and `setup`. An offline Windows remote
+The machine needs internet access for the install and `setup`: github.com and its
+downloads (the kit, pedsum, pedigreegraph, EPIMIGHT, pixi), pixi.sh, conda.anaconda.org
+and pypi.org (the pixi environment), static.rust-lang.org (Rust), crates.io and
+static.crates.io (pedigreegraph's Rust crates) and cloud.r-project.org (Matrix's source).
+Behind a proxy that blocks any of these, the step that needs it stops with a download or
+timeout error. An offline Windows remote
 desktop, such as Statistics Sweden's MONA, can't run the kit (ADR 0006).
 
-## 1. Install the tools
+## 1. Install or update the tools
 
-In PowerShell, as yourself (not as administrator):
+In PowerShell, as yourself (not as administrator), paste this block. It works on a new
+machine and on one that already has some of the tools: it installs what is missing and
+switches pixi and Rust to the versions the kit needs.
 
 ```powershell
-winget install --id Git.Git -e --source winget --scope user
-$env:PIXI_VERSION = "v0.84.1"; irm -useb https://pixi.sh/install.ps1 | iex
-Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
-& $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain 1.99.1 --profile minimal
+# Git, if it isn't installed yet
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+  if (Get-Command winget -ErrorAction SilentlyContinue) {
+    winget install --id Git.Git -e --source winget --scope user
+  } else {
+    Write-Host "No winget: install Git for Windows from https://git-scm.com/download/win ('Only for me')"
+  }
+}
+# pixi 0.84.1: switch an installed pixi to it, else install it
+$env:PIXI_VERSION = "v0.84.1"
+if (Get-Command pixi -ErrorAction SilentlyContinue) { pixi self-update --version 0.84.1 }
+if (-not (Get-Command pixi -ErrorAction SilentlyContinue) -or $LASTEXITCODE -ne 0) {
+  irm -useb https://pixi.sh/install.ps1 | iex
+}
+# Rust 1.99.1 with the MinGW host: switch an installed rustup to it, else install it
+if (Get-Command rustup -ErrorAction SilentlyContinue) {
+  rustup toolchain install 1.99.1-x86_64-pc-windows-gnu --profile minimal
+  rustup default 1.99.1-x86_64-pc-windows-gnu
+} else {
+  Invoke-WebRequest https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe -OutFile $env:TEMP\rustup-init.exe
+  & $env:TEMP\rustup-init.exe -y --default-host x86_64-pc-windows-gnu --default-toolchain 1.99.1 --profile minimal
+}
 ```
 
-Without winget, install Git for Windows from <https://git-scm.com/download/win> and choose
-"Only for me". Rust 1.99.1 is the version the Linux environment locks (`pixi.lock`), so
-every site compiles pedigreegraph with the same Rust; CI checks that every Rust version on
-this page is that one.
+pixi 0.84 is the only series the kit accepts (`requires-pixi` in
+`pixi.toml`): any other pixi stops every command with "This project requires pixi ...".
+Rust 1.99.1 is the version the Linux environment locks (`pixi.lock`), so every site
+compiles pedigreegraph with the same Rust; CI checks that every Rust version on this page
+is that one.
 
-**Close PowerShell and open a new window**, so `PATH` has the three installers' folders.
-Then make sure pixi is 0.84.1, the only series the kit accepts (`requires-pixi` in
-`pixi.toml`); a pixi installed earlier at another version stops every `pixi` command with
-a version error until it is switched. Then check:
+**Close PowerShell and open a new window**, so `PATH` has the installers' folders, and
+check all three:
 
 ```powershell
-pixi self-update --version v0.84.1
 git --version
 pixi --version                            # pixi 0.84.1
 cargo -vV | Select-String 'host|release'  # host: x86_64-pc-windows-gnu, release: 1.99.1
 ```
 
-If you already had rustup with its default MSVC host and no Visual Studio Build Tools,
-switch it instead of reinstalling:
+If `pixi --version` still shows another version, an older pixi comes first on `PATH`:
+`Get-Command pixi -All` lists every one. Remove the others, or put the right one first for
+this window with `$env:Path = "$HOME\.pixi\bin;$env:Path"`.
 
-```powershell
-rustup toolchain install 1.99.1-x86_64-pc-windows-gnu --profile minimal
-rustup default 1.99.1-x86_64-pc-windows-gnu
-```
+## 2. Get or update the kit, and build it
 
-## 2. Get the kit and build it
+The same block makes a first copy of the kit or brings an existing one up to date:
 
 ```powershell
 cd $HOME
-git clone https://github.com/rwaples/nordic-geno-epimight.git
+if (Test-Path nordic-geno-epimight\.git) {
+  git -C nordic-geno-epimight pull --ff-only
+} else {
+  git clone https://github.com/rwaples/nordic-geno-epimight.git
+}
 cd nordic-geno-epimight
 pixi install --locked
 pixi run --locked setup
 ```
+
+`git pull --ff-only` stops if you have changed a file of the kit's own: `git status` names
+it, and `git restore <file>` puts it back. Your site file in `local/` is not the kit's and
+stays as it is. After an update, run step 1's block again first if the kit's pixi or Rust
+version has changed (this page names them), then this block.
 
 `setup` takes several minutes the first time. Besides EPIMIGHT and pedigreegraph it
 rebuilds the Matrix package from CRAN's source: conda-forge's Windows build of Matrix
@@ -79,7 +109,23 @@ example a value with no independent reference, and is not a failure;
 `kit/selftest/README.md` describes the toy site and the checks.
 Give it a folder that doesn't exist yet: it refuses one that isn't empty.
 
-## 4. Run your study
+## 4. Step 0 in PowerShell
+
+[step-0.md](step-0.md) writes its pedsum commands for a Unix shell. In PowerShell a line
+continues with a backtick, not `\`, and Windows has no `gunzip`; PowerShell 5.1's `>` would
+also write UTF-16. The same two commands, from the kit's folder:
+
+```powershell
+pixi run --locked pedsum validate --in D:/data/pedigree.tsv --out D:/data/pedsum/ `
+  --birth-year-col birth_year --birth-date-col birth_date --twin-max-days 1 `
+  --max-children-mother 20 --max-children-father 50
+pixi run --locked python -I -c "import gzip, shutil, sys; shutil.copyfileobj(gzip.open(sys.argv[1]), open(sys.argv[2], 'wb'))" D:/data/pedsum/validate.tsv.gz D:/data/pedigree_validated.tsv
+```
+
+Put your own paths in place of `D:/data/...`; step-0.md's other options (such as
+`--multiple-birth-col` or `--missing-parent-token`) go in the same way.
+
+## 5. Run your study
 
 As in [run-with-pixi.md](run-with-pixi.md), from the kit's folder:
 
@@ -118,6 +164,9 @@ and the next call works.
 | `could not find pixi.toml` | PowerShell is not in the kit's folder | `cd $HOME\nordic-geno-epimight` |
 | `Mingw-w64 runtime failure: 32 bit pseudo relocation ... out of range` | A DLL with 32-bit pseudo-relocations | Rerun `setup`, then run `pixi run --locked python -I ci/find_pseudo_relocs.py .pixi/envs/default` and report what it lists |
 | `Matrix ... did not build from CRAN's source` | CRAN couldn't be reached | Check internet access, then rerun `setup` |
+| `This project requires pixi ...` | Another pixi version is running | Step 1's block again; then the `Get-Command pixi -All` check |
+| `Filename too long` or a build error naming a path over 260 characters | Windows' path limit | Clone the kit nearer the drive's root, for example `C:\nge` |
+| A download that times out or is refused | A proxy or firewall | Ask for access to the sites listed at the top of this page |
 
 Anything else: send the end of the output, for example from
 `pixi run --locked setup 2>&1 | Tee-Object setup.log`.
