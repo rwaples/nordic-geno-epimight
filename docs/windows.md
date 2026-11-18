@@ -32,9 +32,12 @@ every site compiles pedigreegraph with the same Rust; CI checks that every Rust 
 this page is that one.
 
 **Close PowerShell and open a new window**, so `PATH` has the three installers' folders.
-Then check:
+Then make sure pixi is 0.84.1, the only series the kit accepts (`requires-pixi` in
+`pixi.toml`); a pixi installed earlier at another version stops every `pixi` command with
+a version error until it is switched. Then check:
 
 ```powershell
+pixi self-update --version v0.84.1
 git --version
 pixi --version                            # pixi 0.84.1
 cargo -vV | Select-String 'host|release'  # host: x86_64-pc-windows-gnu, release: 1.99.1
