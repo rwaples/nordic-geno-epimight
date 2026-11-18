@@ -44,10 +44,30 @@ validate_pedigree <- function(path, dir, threads, multiple_birth_column = NULL) 
                     stdout = log, stderr = log)
   written <- file.path(dir, "validate.tsv.gz")
   pedigree <- if (file.exists(written)) {
-    data.table::fread(cmd = paste("gzip -dc", shQuote(written)), sep = "\t",
-                      colClasses = "character", na.strings = "", showProgress = FALSE)
+    fread_gz(written, sep = "\t", colClasses = "character", na.strings = "",
+             showProgress = FALSE)
   }
   list(pedigree = pedigree, findings = read_pedsum_findings(dir, status, path))
+}
+
+# fread on a .gz file. fread itself needs R.utils for one, and Windows has no gzip to pipe
+# through, so base R decompresses it to a temporary file first.
+fread_gz <- function(path, ...) {
+  plain <- tempfile(fileext = ".tsv")
+  on.exit(unlink(plain))
+  # Closed before the unlink, also after an error: Windows can't delete an open file.
+  local({
+    from <- gzfile(path, "rb")
+    on.exit(close(from), add = TRUE)
+    to <- file(plain, "wb")
+    on.exit(close(to), add = TRUE)
+    repeat {
+      chunk <- readBin(from, raw(), 2^24)
+      if (length(chunk) == 0) break
+      writeBin(chunk, to)
+    }
+  })
+  data.table::fread(plain, ...)
 }
 
 # pedsum exits 0 when it finds nothing and 1 when it only reports findings; any other exit

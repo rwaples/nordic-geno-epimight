@@ -1,0 +1,3 @@
+# LF everywhere, also in a Windows checkout, so every site has the same bytes. The plan
+# checksum reads \r\n as \n anyway (plan_checksum), for plan files that arrive another way.
+* text=auto eol=lf

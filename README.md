@@ -14,7 +14,8 @@ Current status: **preliminary**.
    (19 for the initial plan). [docs/step-0.md](docs/step-0.md) gives the formats and the
    rules from the statistical analysis plan (SAP).
 2. **Install the kit and run it**, by one of two routes:
-   - a server with internet access: [docs/run-with-pixi.md](docs/run-with-pixi.md);
+   - a server with internet access: [docs/run-with-pixi.md](docs/run-with-pixi.md); on
+     64-bit Windows, [docs/windows.md](docs/windows.md) first;
    - a server without internet access, such as TSD:
      [docs/run-with-image.md](docs/run-with-image.md). The Apptainer image is not released
      yet.

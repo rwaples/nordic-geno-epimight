@@ -31,6 +31,38 @@ install_pinned <- function(pkg) {
   }
 }
 
+# Windows only: conda-forge's Matrix 1.7-6 (r45h5ea86f4_0) calls BLAS and LAPACK through
+# 32-bit runtime pseudo-relocations, so a process that loads it dies with "32 bit pseudo
+# relocation ... out of range" whenever Windows maps Matrix.dll more than 2 GB from MKL,
+# about one start in 20 once survival, pedigreegraph and the tidyverse are loaded. Built
+# here from CRAN's source of the same version, its calls go through import thunks. The
+# stamp in the package folder holds the build's Built field, which any other build of
+# Matrix (a pixi reinstall or upgrade) changes, so only this build passes.
+rebuild_matrix_on_windows <- function() {
+  if (.Platform$OS.type != "windows") {
+    return(invisible())
+  }
+  stamp <- function() file.path(find.package("Matrix"), "kit-built-from-source")
+  built <- function() utils::packageDescription("Matrix")$Built
+  version <- utils::packageDescription("Matrix")$Version
+  if (file.exists(stamp()) && identical(readLines(stamp()), built())) {
+    message(sprintf("Matrix %s already built from source", version))
+    return(invisible())
+  }
+  message(sprintf(paste("building Matrix %s from CRAN's source",
+                        "(conda-forge's Windows build can crash on load)"), version))
+  was <- built()
+  # remotes returns NA, not an error, when the download fails.
+  installed <- remotes::install_version("Matrix", version, repos = "https://cloud.r-project.org",
+                                        dependencies = FALSE, upgrade = "never", quiet = FALSE)
+  if (!identical(unname(installed), "Matrix") || identical(built(), was) ||
+        !identical(utils::packageDescription("Matrix")$Version, version)) {
+    stop(sprintf("Matrix %s did not build from CRAN's source", version), call. = FALSE)
+  }
+  writeLines(built(), stamp())
+}
+
+rebuild_matrix_on_windows()
 install_pinned("pedigreegraph")
 install_pinned("epimight")
 

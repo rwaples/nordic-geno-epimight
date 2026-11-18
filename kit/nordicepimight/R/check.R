@@ -71,16 +71,28 @@ plan_files <- function(study) {
 }
 
 # One checksum for the whole plan, the same at every site that runs the same plan; NULL
-# when the plan file was not found.
+# when the plan file was not found. Each file is hashed with \n line ends, so a CRLF copy
+# (a Windows checkout, a ZIP download, an editor's save) gives the same checksum.
 plan_checksum <- function(study) {
   if (is.null(study$plan_path)) {
     return(NULL)
   }
   files <- plan_files(study)
-  digest_file <- tempfile()
-  on.exit(unlink(digest_file))
-  writeLines(paste(names(files), unname(tools::md5sum(files))), digest_file)
-  unname(tools::md5sum(digest_file))
+  # One "name md5" line per file, each ended by \n, as writeLines() wrote it on Linux.
+  lines <- paste0(names(files), " ", vapply(files, md5_lf, ""), "\n", collapse = "")
+  md5_lf(lines, text = TRUE)
+}
+
+# The md5 of a file's bytes, or of `text`, with each \r\n read as \n.
+md5_lf <- function(path, text = FALSE) {
+  bytes <- if (text) charToRaw(path) else readBin(path, raw(), file.size(path))
+  cr <- which(bytes == as.raw(13L))
+  crlf <- cr[cr < length(bytes) & bytes[cr + 1L] == as.raw(10L)]
+  if (length(crlf) > 0) bytes <- bytes[-crlf]
+  plain <- tempfile()
+  on.exit(unlink(plain))
+  writeBin(bytes, plain)
+  unname(tools::md5sum(plain))
 }
 
 # The input files whose path or content differs from what the check step recorded.

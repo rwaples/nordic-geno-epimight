@@ -371,6 +371,10 @@ test_that("the site's own multiple-birth column replaces sets found from birth d
   result <- check_fixture(function(s) {
     s$site$multiple_birth_column <- "delivery"
     s$pedigree[, delivery := fifelse(id %in% c("c4", "c5"), "D1", NA_character_)]
+    # Within pedsum's 7 days for a register set, but more than the 1 day that would make
+    # c4 and c5 a set by birth date: only the column can.
+    s$pedigree[id == "c4", birth_date := "1951-05-01"]
+    s$pedigree[id == "c5", birth_date := "1951-05-05"]
     s$pedigree[id %in% c("c1", "c2"), birth_date := "1950-02-01"]
     # Same-sex pairs, so that only the sets decide which leave FS.
     s$pedigree[id %in% c("c2", "c5"), sex := c(1, 2)]
@@ -387,6 +391,7 @@ test_that("pedsum's own set numbers become multiple_birth_set, whatever the regi
   result <- check_fixture(function(s) {
     s$site$multiple_birth_column <- "delivery"
     s$pedigree[, delivery := "."][id == "c4", delivery := "D7"][id == "c5", delivery := "D7 "]
+    s$pedigree[id %in% c("c4", "c5"), birth_date := "1951-05-01"]
     s
   }, pedsum = TRUE)
   expect_equal(codes(result, "STOP"), character())
@@ -531,4 +536,29 @@ test_that("pedigree coverage counts people with no trait row per birth decade (#
   expect_equal(coverage$people, c(2L, 4L, 6L))
   expect_equal(coverage$trait_row, c(0L, 0L, 6L))
   expect_equal(coverage$no_trait_row, c(2L, 4L, 0L))
+})
+
+test_that("the plan checksum ignores CRLF and matches the LF digest list's md5", {
+  dir <- tempfile()
+  dir.create(dir)
+  on.exit(unlink(dir, recursive = TRUE))
+  write_bytes <- function(name, text) {
+    path <- file.path(dir, name)
+    writeBin(charToRaw(text), path)
+    path
+  }
+  lf <- list(plan_path = write_bytes("plan.yaml", "a: 1\nb: 2\n"),
+             traits = write_bytes("traits.tsv", "trait\tcode\nt1\tF20\n"),
+             analyses = write_bytes("analyses.tsv", "trait\nt1\n"))
+  crlf <- list(plan_path = write_bytes("plan_crlf.yaml", "a: 1\r\nb: 2\r\n"),
+               traits = write_bytes("traits_crlf.tsv", "trait\tcode\r\nt1\tF20\r\n"),
+               analyses = write_bytes("analyses_crlf.tsv", "trait\r\nt1\r\n"))
+  expect_identical(plan_checksum(crlf), plan_checksum(lf))
+  # The value the kit computed before CRLF was handled: the md5 of the "name md5" lines.
+  digest <- write_bytes("digest", paste0(names(plan_files(lf)), " ",
+                                         unname(tools::md5sum(unlist(plan_files(lf)))),
+                                         "\n", collapse = ""))
+  expect_identical(plan_checksum(lf), unname(tools::md5sum(digest)))
+  expect_false(identical(plan_checksum(lf),
+                         plan_checksum(modifyList(lf, list(analyses = lf$traits)))))
 })

@@ -8,7 +8,7 @@
 [workspace]
 name = "nordic-geno-epimight"
 channels = ["conda-forge"]
-platforms = ["linux-64"]
+platforms = ["linux-64", "win-64"]
 requires-pixi = ">=0.84.1,<0.85"
 
 [dependencies]
@@ -25,9 +25,8 @@ r-tidyr = "*"
 r-yaml = "*"
 r-rjson = "*"
 r-stringr = "*"
-# pedigreegraph 0.15.0's Imports, and the Rust toolchain it compiles with (rustc >= 1.85).
+# pedigreegraph 0.16.0's Imports, and the C toolchain it compiles with; Rust is per platform below.
 r-matrix = "*"
-rust = ">=1.85"
 c-compiler = "*"
 cxx-compiler = "*"
 make = "*"
@@ -44,7 +43,7 @@ r-lintr = "*"
 python = "3.14.*"
 
 [pypi-dependencies]
-pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.17.0" }
+pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.18.0" }
 
 [tasks]
 setup = { cmd = "Rscript kit/setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }
@@ -58,3 +57,16 @@ study = { cmd = "Rscript -e 'nordicepimight::main(\"study\")'", description = "S
 selftest = { cmd = "Rscript -e 'nordicepimight::main(\"selftest\")'", description = "The kit on its toy study, against independent values (pixi run selftest OUT/)" }
 test = { cmd = "Rscript -e 'testthat::test_local(\"kit/nordicepimight\", stop_on_failure = TRUE)'", description = "Unit tests" }
 lint = { cmd = "Rscript -e 'l <- c(lintr::lint_package(\"kit/nordicepimight\"), lintr::lint(\"kit/setup.R\"), lintr::lint_dir(\"kit/selftest/build\")); print(l); quit(status = length(l) > 0)'", description = "Lint the package and scripts" }
+
+[target.linux-64.dependencies]
+rust = ">=1.85"
+
+# R on Windows builds packages with MinGW gcc and a POSIX shell, which CRAN's R gets from
+# Rtools: these are its sh, basename, sed and grep. Rust comes from rustup with the MinGW
+# host (docs/windows.md): conda-forge's rust is MSVC-hosted, and its build scripts would
+# need Visual Studio's link.exe.
+[target.win-64.dependencies]
+m2-bash = "*"
+m2-coreutils = "*"
+m2-sed = "*"
+m2-grep = "*"

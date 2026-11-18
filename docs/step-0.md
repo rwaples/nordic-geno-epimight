@@ -97,7 +97,7 @@ other relatives. **[SAP 4.1]**
 
 ### 1.4 Run pedsum
 
-**pedsum** checks and repairs the pedigree; it comes with the kit (v0.17.0). Run it with
+**pedsum** checks and repairs the pedigree; it comes with the kit (v0.18.0). Run it with
 the same settings the kit's check step uses, from the kit's folder, with your paths in
 full and outside the kit's folder:
 
@@ -123,7 +123,7 @@ Go through `/path/to/data/pedsum/validate.log` and what pedsum prints:
 |---|---|
 | `parent_child_count` | A mother with more than 20 children or a father with more than 50. Almost always a code for an unknown parent, such as `9999`: check that the id is such a code, then delete its own row if it has one and rerun with `--missing-parent-token <code>` |
 | Duplicate row, wrong sex for a parent, parent born after child, cycle | Fix it in your source data. Otherwise use `--drop-offending` or `--break-cycles` |
-| `multiple births:` line, printed to the terminal | Counts of multiple-birth sets. To spot placeholder birth dates, run pedsum once more with `--twin-max-days 30` and `--out` set to another folder, and compare the counts: sets found at 30 days but not at 1 usually mean placeholder dates. Fix them. Don't use that run's output |
+| `multiple births:` line, printed to the terminal | Counts of multiple-birth sets. To spot placeholder birth dates, run pedsum once more with `--twin-max-days 7` (pedsum's most) and `--out` set to another folder, and compare the counts: sets found at 7 days but not at 1 usually mean placeholder dates. Fix them. Don't use that run's output |
 | Multiple-birth set whose members aren't all full siblings, or with one member | pedsum clears it and its members count as single births. Check `multiple_birth_id` or the parent links |
 
 ## 2. The trait files

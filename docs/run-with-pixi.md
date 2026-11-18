@@ -1,7 +1,8 @@
 # Run the kit with pixi
 
-For a Linux server with internet access. On a server without internet, use the
-[Apptainer image](run-with-image.md) instead.
+For a Linux server with internet access. On 64-bit Windows, install with
+[windows.md](windows.md) and then follow this page from step 4. On a server without
+internet, use the [Apptainer image](run-with-image.md) instead.
 
 Run every `pixi run` command from the kit's folder (`nordic-geno-epimight/`): pixi finds
 the kit there. Keep your data and anything made from it (pedsum's output, `out/`)
