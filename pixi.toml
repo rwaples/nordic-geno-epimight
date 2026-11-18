@@ -45,11 +45,16 @@ python = "3.14.*"
 [pypi-dependencies]
 pedsum = { git = "https://github.com/rwaples/pedsum.git", tag = "v0.18.0" }
 
-# Only this environment's R library. R's per-user library would come first, and on Windows
-# it is the folder a separately installed R uses: setup would install into it and the
-# kit would load whatever that R put there. NULL names no folder, so R drops it.
+# Only this environment's R and its own library, as in the container
+# (container/nordicepimight): R_LIBS, R's per-user library and the user's startup files
+# would put another R's packages first. On Windows the per-user library is the folder a
+# separately installed R uses, so setup installed into it. NULL names no file or folder.
+# A proxy set in ~/.Renviron is ignored too: set http_proxy/https_proxy in the shell.
 [activation.env]
+R_LIBS = ""
 R_LIBS_USER = "NULL"
+R_ENVIRON_USER = "NULL"
+R_PROFILE_USER = "NULL"
 
 [tasks]
 setup = { cmd = "Rscript kit/setup.R", description = "Build epimight, pedigreegraph and the kit's package into this environment" }

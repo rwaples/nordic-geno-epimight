@@ -8,11 +8,11 @@
 pinned <- yaml::read_yaml("kit/nordicepimight/inst/pins.yaml")
 
 # Everything below installs into .libPaths()[1], which must be this environment's library
-# (pixi.toml sets R_LIBS_USER=NULL); a library ahead of it would take the installs.
+# (pixi.toml keeps other libraries out); a library ahead of it would take the installs.
 env_lib <- normalizePath(R.home("library"), winslash = "/")
 if (!identical(normalizePath(.libPaths()[1], winslash = "/"), env_lib)) {
   stop(sprintf(paste("R would install into %s, not this environment's library %s. Run",
-                     "setup with `pixi run setup`, and take R_LIBS out of ~/.Renviron."),
+                     "setup with `pixi run setup`, which ignores R_LIBS and R's startup files."),
                .libPaths()[1], env_lib), call. = FALSE)
 }
 
@@ -51,24 +51,38 @@ rebuild_matrix_on_windows <- function() {
   if (.Platform$OS.type != "windows") {
     return(invisible())
   }
-  # Missing or half-written when a rebuild was stopped partway.
-  if (!is.list(suppressWarnings(utils::packageDescription("Matrix", lib.loc = env_lib)))) {
-    stop(paste("Matrix is missing or broken in the pixi environment, most likely because its",
-               "rebuild was stopped. Delete", file.path(env_lib, "Matrix"), "and run",
-               "`pixi reinstall r-matrix`, then `pixi run setup` again."), call. = FALSE)
+  target <- file.path(env_lib, "Matrix")
+  aside <- file.path(env_lib, "00matrix-conda")
+  usable <- function(dir) {
+    desc <- suppressWarnings(utils::packageDescription("Matrix", lib.loc = dirname(dir)))
+    is.list(desc) && dir.exists(file.path(dir, "R")) && dir.exists(file.path(dir, "libs"))
   }
-  stamp <- function() file.path(find.package("Matrix"), "kit-built-from-source")
-  built <- function() utils::packageDescription("Matrix")$Built
-  version <- utils::packageDescription("Matrix")$Version
-  if (file.exists(stamp()) && identical(readLines(stamp()), built())) {
+  # A swap stopped between its two renames leaves conda's Matrix aside: put it back.
+  if (dir.exists(aside) && !usable(target)) {
+    unlink(target, recursive = TRUE)
+    if (!file.rename(aside, target)) {
+      stop(sprintf("can't move %s back to %s; rename it by hand, then rerun setup", aside,
+                   target), call. = FALSE)
+    }
+  }
+  unlink(aside, recursive = TRUE)
+  if (!usable(target)) {
+    stop(paste("Matrix is missing or broken in the pixi environment, most likely because a",
+               "rebuild was stopped. Delete", target, "and run",
+               "`pixi reinstall --locked r-matrix`, then `pixi run setup` again."), call. = FALSE)
+  }
+  stamp <- file.path(target, "kit-built-from-source")
+  installed_desc <- utils::packageDescription("Matrix", lib.loc = env_lib)
+  version <- installed_desc$Version
+  if (file.exists(stamp) && identical(readLines(stamp), installed_desc$Built)) {
     message(sprintf("Matrix %s already built from source", version))
     return(invisible())
   }
   message(sprintf(paste("building Matrix %s from CRAN's source",
                         "(conda-forge's Windows build can crash on load)"), version))
-  # Built in a folder of its own, so a build that fails or crashes leaves conda's Matrix
-  # in place; it replaces conda's only once it is complete.
-  staging <- tempfile("matrix-build-")
+  # Built in a folder inside the library, so a build that fails or crashes leaves the
+  # installed Matrix as it was, and the swap is two renames on one volume.
+  staging <- tempfile("00matrix-build-", tmpdir = env_lib)
   dir.create(staging)
   on.exit(unlink(staging, recursive = TRUE), add = TRUE)
   # remotes returns NA, not an error, when the download fails.
@@ -77,26 +91,31 @@ rebuild_matrix_on_windows <- function() {
                                         quiet = FALSE)
   new <- suppressWarnings(utils::packageDescription("Matrix", lib.loc = staging))
   if (!identical(unname(installed), "Matrix") || !is.list(new) ||
-        !identical(new$Version, version)) {
-    stop(sprintf(paste("Matrix %s did not build from CRAN's source; conda's build is still",
-                       "installed. The end of the output above says why."), version),
+        !identical(new$Version, version) || !usable(file.path(staging, "Matrix"))) {
+    stop(sprintf(paste("Matrix %s did not build from CRAN's source; the installed Matrix is",
+                       "unchanged. The end of the output above says why."), version),
          call. = FALSE)
   }
-  target <- file.path(env_lib, "Matrix")
-  aside <- paste0(target, ".conda")
-  unlink(aside, recursive = TRUE)
   if (!file.rename(target, aside)) {
     stop(sprintf("can't move %s aside to replace it; close any R that has Matrix loaded",
                  target), call. = FALSE)
   }
-  if (!file.copy(file.path(staging, "Matrix"), env_lib, recursive = TRUE)) {
-    unlink(target, recursive = TRUE)
-    file.rename(aside, target)
-    stop(sprintf("can't copy the built Matrix into %s; conda's build is back", env_lib),
+  if (!file.rename(file.path(staging, "Matrix"), target)) {
+    restored <- file.rename(aside, target)
+    stop(sprintf("can't move the built Matrix into %s; %s", env_lib,
+                 if (restored) "the installed Matrix is unchanged" else
+                   paste("conda's Matrix is in", aside, "- rename it back to", target)),
          call. = FALSE)
   }
-  unlink(aside, recursive = TRUE)
-  writeLines(built(), stamp())
+  if (!identical(utils::packageDescription("Matrix", lib.loc = env_lib)$Built, new$Built)) {
+    stop(sprintf("%s is not the Matrix just built; delete it and rerun setup", target),
+         call. = FALSE)
+  }
+  writeLines(new$Built, stamp)
+  # conda's copy, with its 32-bit pseudo-relocations; the next setup retries a failed delete.
+  if (unlink(aside, recursive = TRUE) != 0 || dir.exists(aside)) {
+    warning(sprintf("couldn't delete %s; the next setup will", aside), call. = FALSE)
+  }
 }
 
 rebuild_matrix_on_windows()

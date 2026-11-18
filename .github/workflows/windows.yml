@@ -66,7 +66,11 @@ jobs:
           "PATH=$($keep -join ';')" >> $env:GITHUB_ENV
           # A separately installed R's per-user library, as on a site's machine: conda's R
           # names the same folder, and pixi.toml's R_LIBS_USER=NULL must keep it out.
-          New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\R\win-library\4.5" | Out-Null
+          $rver = pixi run --locked Rscript -e 'cat(R.version$major, strsplit(R.version$minor, "[.]")[[1]][1], sep = ".")'
+          New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\R\win-library\$rver" | Out-Null
+          # A user .Renviron that names that library, which pixi.toml's R_ENVIRON_USER skips.
+          New-Item -ItemType Directory -Force "$HOME\Documents" | Out-Null
+          "R_LIBS_USER=$env:LOCALAPPDATA/R/win-library/$rver" | Set-Content "$HOME\Documents\.Renviron"
           # pkgbuild looks for Rtools in these folders whatever PATH holds.
           "RTOOLS45_HOME=C:\no-rtools" >> $env:GITHUB_ENV
           "RTOOLS44_HOME=C:\no-rtools" >> $env:GITHUB_ENV
