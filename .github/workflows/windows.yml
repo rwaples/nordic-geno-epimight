@@ -64,6 +64,9 @@ jobs:
             (Split-Path (Get-Command pwsh).Source), (Split-Path (Get-Command pixi).Source),
             (Split-Path (Get-Command cargo).Source)
           "PATH=$($keep -join ';')" >> $env:GITHUB_ENV
+          # A separately installed R's per-user library, as on a site's machine: conda's R
+          # names the same folder, and pixi.toml's R_LIBS_USER=NULL must keep it out.
+          New-Item -ItemType Directory -Force "$env:LOCALAPPDATA\R\win-library\4.5" | Out-Null
           # pkgbuild looks for Rtools in these folders whatever PATH holds.
           "RTOOLS45_HOME=C:\no-rtools" >> $env:GITHUB_ENV
           "RTOOLS44_HOME=C:\no-rtools" >> $env:GITHUB_ENV
