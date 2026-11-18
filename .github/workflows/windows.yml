@@ -29,9 +29,6 @@ jobs:
       GITHUB_PAT: ${{ github.token }}
       # testthat's progress reporter quits after 10 failures; run every test file.
       TESTTHAT_MAX_FAILS: Inf
-      # pedigree-graph's windows-r branch, which has the Windows build (unreleased). The
-      # Windows job pins pedigreegraph to it, so setup builds it as a site's setup would.
-      PG_WINDOWS_COMMIT: ba42ea42c58976b3c45bd90e747b82ed58f2cd2a
     steps:
       - uses: actions/checkout@v7
         with:
@@ -67,14 +64,6 @@ jobs:
           git apply --verbose --directory="$(realpath --relative-to=. "$site")" ci/pedsum/memory.patch
           grep -q '_STATM = Path' "$site/pedsum/memory.py"
           pixi run --locked python -I -c "import pedsum.memory"
-      - id: pin
-        if: runner.os == 'Windows'
-        continue-on-error: true
-        shell: bash
-        run: |
-          pins=kit/nordicepimight/inst/pins.yaml
-          sed -i "/^pedigreegraph:/,/^[a-z]/s/^  commit: .*/  commit: $PG_WINDOWS_COMMIT/" "$pins"
-          grep -q "^  commit: $PG_WINDOWS_COMMIT" "$pins"
       - id: path
         name: Cut PATH down to a clean machine's
         if: runner.os == 'Windows'
@@ -135,7 +124,7 @@ jobs:
           $steps = [ordered]@{
             rust = '${{ steps.rust.outcome }}'; path = '${{ steps.path.outcome }}'
             install = '${{ steps.install.outcome }}'; pedsum = '${{ steps.pedsum.outcome }}'
-            pin = '${{ steps.pin.outcome }}'; clean = '${{ steps.clean.outcome }}'
+            clean = '${{ steps.clean.outcome }}'
             setup = '${{ steps.setup.outcome }}'; relocs = '${{ steps.relocs.outcome }}'
             test = '${{ steps.test.outcome }}'
             selftest = '${{ steps.selftest.outcome }}'
