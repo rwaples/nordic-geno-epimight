@@ -6,7 +6,7 @@ Description: The functions behind the nordic-geno-epimight kit's steps: checking
     pedigree and trait files, building EPIMIGHT's cohort table, running EPIMIGHT, and
     writing, summarizing and plotting its results. Installed by the kit's setup step;
     not meant for CRAN.
-License: MIT + file LICENSE
+License: file LICENSE
 Encoding: UTF-8
 Depends: R (>= 4.5)
 Imports: data.table, yaml, ggplot2, scales, knitr, rmarkdown, epimight, pedigreegraph
