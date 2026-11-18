@@ -73,7 +73,8 @@ cp /path/to/nordic-geno-epimight/container/docker/{Dockerfile,README.md,VERSION}
   should report only `PLATFORMS`.
 - In imagelib's `README.md`, update the nordic-geno-epimight row of the Available Images
   table (Software Version: the kit version; Image Version: `VERSION`) and the image
-  version in its `singularity pull` example.
+  image version in its Singularity examples: the `singularity pull` line and the two
+  `singularity exec` lines after it, which name `nordic-geno-epimight_<VERSION>.sif`.
 
 Build it once from the copy, which takes the default `NGE_REF`, so the copy builds the
 release:
