@@ -51,19 +51,6 @@ jobs:
       - id: install
         continue-on-error: true
         run: pixi install --locked
-      # Both platforms: pedsum's fix for Windows (pedsum bee59ec and 4be9465, unreleased),
-      # merged onto v0.17.0's memory.py, laid over the pinned pedsum.
-      - id: pedsum
-        continue-on-error: true
-        shell: bash
-        run: |
-          # Inside a repository git apply reads paths from its top and skips any outside
-          # the current folder, so the patch is applied from the top, into site-packages.
-          site=$(pixi run --locked python -I -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
-          if command -v cygpath > /dev/null; then site=$(cygpath -u "$site"); fi
-          git apply --verbose --directory="$(realpath --relative-to=. "$site")" ci/pedsum/memory.patch
-          grep -q '_STATM = Path' "$site/pedsum/memory.py"
-          pixi run --locked python -I -c "import pedsum.memory"
       - id: path
         name: Cut PATH down to a clean machine's
         if: runner.os == 'Windows'
@@ -123,7 +110,7 @@ jobs:
         run: |
           $steps = [ordered]@{
             rust = '${{ steps.rust.outcome }}'; path = '${{ steps.path.outcome }}'
-            install = '${{ steps.install.outcome }}'; pedsum = '${{ steps.pedsum.outcome }}'
+            install = '${{ steps.install.outcome }}'
             clean = '${{ steps.clean.outcome }}'
             setup = '${{ steps.setup.outcome }}'; relocs = '${{ steps.relocs.outcome }}'
             test = '${{ steps.test.outcome }}'

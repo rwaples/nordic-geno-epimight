@@ -218,15 +218,15 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/rust-std-x86_64-unknown-linux-gnu-1.99.1-h480d76f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/sysroot_linux-64-2.28-h4ee821c_9.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2026e-h5d301ff_0.conda
-      - pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.17.0#8dc58420399012094bfe80d2fee90d76855fe693
+      - pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.18.0#3e7d590bc7b0b4a3158e932c22e0843e1b52f85d
       - pypi: https://files.pythonhosted.org/packages/16/d5/928078d2b28f26829b138b4a6c3980045022fb409f570657a224ae60ef4e/numpy-2.5.4-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/51/6d/3014112c7f717d1253223faa13b6db3ac3a64ed00ab2a3bc1b942bc9cdd4/polars-1.44.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/59/1a/0e9a4cf86e470db73a27af634bc43219a475e258e8a66f2da173816543b5/numba-0.68.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/5c/ed/54107648386edf3da7def03d42721c72279f6bc2e17b5274c18955dc5833/llvmlite-0.50.0-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/6b/89/2a844506d49651e9aa1af6ef95b6bd8031cb1d5a4375edec6155037e04cf/scipy-1.18.1-cp314-cp314-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/76/4c/74537a5b2c78ac968f9347ed9bdb3e7ee898ed1855ee7261dae4e5fc0495/pedigree_graph-0.16.0-cp313-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/7c/e4/ad0aee3a1572704186ca64a260f67fd2fff4d1206d9bbf73caf71a98ce7c/pg_phenotype-0.6.1-cp313-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/88/f9/16491d7ed2a919954993e48aa941b200f38040928474c9e85ea9e64222c3/pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/9d/e0/c5247f55d5881734f315bb68724d2a518653f59dc2cb48745203f0c8af5d/pedigree_graph-0.15.0-cp313-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/a7/03/921a3d3c75785aca9ebfbfcabfbc3a1be12e2ab5265deb026d55a5a3f83e/tqdm-4.70.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e9/24/ed9982657c446dd5491b089370eea196725673570cfc61f7225a9fdd7ef0/polars_runtime_32-1.44.2-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       win-64:
@@ -423,11 +423,11 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/vs2015_runtime-14.51.36247-hda273ae_44.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vs2022_win-64-19.44.35207-h5f61962_44.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
-      - pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.17.0#8dc58420399012094bfe80d2fee90d76855fe693
+      - pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.18.0#3e7d590bc7b0b4a3158e932c22e0843e1b52f85d
       - pypi: https://files.pythonhosted.org/packages/23/20/bb6982b26a40bb43951265ba29d4c246ef0ff59c9fdcdf0ed04e0687de4d/pyyaml-6.0.3-cp314-cp314-win_amd64.whl
+      - pypi: https://files.pythonhosted.org/packages/46/1f/e5b0651debbbe45d8f14f186f8cf3b0722137d24e16854e374bfc57fc63c/pedigree_graph-0.16.0-cp313-abi3-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/6d/3014112c7f717d1253223faa13b6db3ac3a64ed00ab2a3bc1b942bc9cdd4/polars-1.44.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/52/94/d73da0d28f16c45bb9b0a5691b91610b0275c5ef0eb5e43c87cf2dc1bf31/scipy-1.18.1-cp314-cp314-win_amd64.whl
-      - pypi: https://files.pythonhosted.org/packages/73/f6/badd1dead64155304d5c3b48a37553021a319fcf28bc89fd633d7f099918/pedigree_graph-0.15.0-cp313-abi3-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/74/e2/494516771374b43060c1b778b371cba53d576abd3aee1275eecd73896e3b/numpy-2.5.5-cp314-cp314-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/75/a3/840055bcd92e5869fb72088fb4d7d47064719fea7a7b61f624a93c9610bb/pg_phenotype-0.6.1-cp313-abi3-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/99/bb/226377f6dce75072747fb94f3e4f1e544d448a8433178a7b98205676cf45/numba-0.68.1-cp314-cp314-win_amd64.whl
@@ -5673,16 +5673,16 @@ packages:
     - zstd >=1.5.7,<1.6.0a0
   size: 387535
   timestamp: 1786599623274
-- pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.17.0#8dc58420399012094bfe80d2fee90d76855fe693
+- pypi: git+https://github.com/rwaples/pedsum.git?tag=v0.18.0#3e7d590bc7b0b4a3158e932c22e0843e1b52f85d
   name: pedsum
-  version: 0.17.0
+  version: 0.18.0
   requires_dist:
   - numpy>=2.2,<3
   - scipy>=1.16.3,<2
   - polars>=1.43.2,<2
   - pyyaml>=6,<7
   - tqdm>=4.66,<5
-  - pedigree-graph>=0.15,<0.16
+  - pedigree-graph>=0.16,<0.17
   - numba>=0.68,<1
   - pg-phenotype>=0.6.1,<0.7
   - pytest>=9,<10 ; extra == 'test'
@@ -5701,6 +5701,24 @@ packages:
   version: 6.0.3
   sha256: 4a2e8cebe2ff6ab7d1050ecd59c25d4c8bd7e6f400f5f82b96557ac0abafd0ac
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/46/1f/e5b0651debbbe45d8f14f186f8cf3b0722137d24e16854e374bfc57fc63c/pedigree_graph-0.16.0-cp313-abi3-win_amd64.whl
+  name: pedigree-graph
+  version: 0.16.0
+  sha256: 8929b3b093db2e3d048df01d6c2ca211308b1f6c2c81c02cea3e2fe0cbe9ea74
+  requires_dist:
+  - numpy>=2.2,<3
+  - scipy>=1.14,<2
+  - numba>=0.60,<1 ; extra == 'test'
+  - pytest>=9,<10 ; extra == 'test'
+  - pytest-cov>=7,<8 ; extra == 'test'
+  - pytest-xdist>=3.8,<4 ; extra == 'test'
+  - ruff>=0.17,<0.18 ; extra == 'test'
+  - hypothesis>=6,<7 ; extra == 'test'
+  - pandas>=3.0,<4 ; extra == 'test'
+  - polars>=1.43.2,<2 ; extra == 'test'
+  - pyarrow>=17,<26 ; extra == 'test'
+  - ty==0.0.89 ; extra == 'typecheck'
+  requires_python: '>=3.13'
 - pypi: https://files.pythonhosted.org/packages/51/6d/3014112c7f717d1253223faa13b6db3ac3a64ed00ab2a3bc1b942bc9cdd4/polars-1.44.2-py3-none-any.whl
   name: polars
   version: 1.44.2
@@ -5843,24 +5861,6 @@ packages:
   - ruff>=0.12.0 ; extra == 'dev'
   - cython-lint>=0.12.2 ; extra == 'dev'
   requires_python: '>=3.12'
-- pypi: https://files.pythonhosted.org/packages/73/f6/badd1dead64155304d5c3b48a37553021a319fcf28bc89fd633d7f099918/pedigree_graph-0.15.0-cp313-abi3-win_amd64.whl
-  name: pedigree-graph
-  version: 0.15.0
-  sha256: 3f83b61bd5e73c25034ebfd15a17b88d2cb06b48a917e3231ded560b0c23a098
-  requires_dist:
-  - numpy>=2.2,<3
-  - scipy>=1.14,<2
-  - numba>=0.60,<1 ; extra == 'test'
-  - pytest>=9,<10 ; extra == 'test'
-  - pytest-cov>=7,<8 ; extra == 'test'
-  - pytest-xdist>=3.8,<4 ; extra == 'test'
-  - ruff>=0.17,<0.18 ; extra == 'test'
-  - hypothesis>=6,<7 ; extra == 'test'
-  - pandas>=3.0,<4 ; extra == 'test'
-  - polars>=1.43.2,<2 ; extra == 'test'
-  - pyarrow>=17,<26 ; extra == 'test'
-  - ty==0.0.89 ; extra == 'typecheck'
-  requires_python: '>=3.13'
 - pypi: https://files.pythonhosted.org/packages/74/e2/494516771374b43060c1b778b371cba53d576abd3aee1275eecd73896e3b/numpy-2.5.5-cp314-cp314-win_amd64.whl
   name: numpy
   version: 2.5.5
@@ -5880,6 +5880,24 @@ packages:
   - hypothesis>=6,<7 ; extra == 'test'
   - pandas>=3.0,<4 ; extra == 'test'
   - polars>=1.43.2,<2 ; extra == 'test'
+  - ty==0.0.89 ; extra == 'typecheck'
+  requires_python: '>=3.13'
+- pypi: https://files.pythonhosted.org/packages/76/4c/74537a5b2c78ac968f9347ed9bdb3e7ee898ed1855ee7261dae4e5fc0495/pedigree_graph-0.16.0-cp313-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+  name: pedigree-graph
+  version: 0.16.0
+  sha256: 12e2b5b55aff1ba52787cebc33d9cfc09d66bf8a523449e2de34e68b0521d290
+  requires_dist:
+  - numpy>=2.2,<3
+  - scipy>=1.14,<2
+  - numba>=0.60,<1 ; extra == 'test'
+  - pytest>=9,<10 ; extra == 'test'
+  - pytest-cov>=7,<8 ; extra == 'test'
+  - pytest-xdist>=3.8,<4 ; extra == 'test'
+  - ruff>=0.17,<0.18 ; extra == 'test'
+  - hypothesis>=6,<7 ; extra == 'test'
+  - pandas>=3.0,<4 ; extra == 'test'
+  - polars>=1.43.2,<2 ; extra == 'test'
+  - pyarrow>=17,<26 ; extra == 'test'
   - ty==0.0.89 ; extra == 'typecheck'
   requires_python: '>=3.13'
 - pypi: https://files.pythonhosted.org/packages/7c/e4/ad0aee3a1572704186ca64a260f67fd2fff4d1206d9bbf73caf71a98ce7c/pg_phenotype-0.6.1-cp313-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
@@ -5911,24 +5929,6 @@ packages:
   - llvmlite>=0.50.0.dev0,<0.51
   - numpy>=1.22,<2.6
   requires_python: '>=3.10'
-- pypi: https://files.pythonhosted.org/packages/9d/e0/c5247f55d5881734f315bb68724d2a518653f59dc2cb48745203f0c8af5d/pedigree_graph-0.15.0-cp313-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
-  name: pedigree-graph
-  version: 0.15.0
-  sha256: ec4942013b7b236f20b51b8f88d33de9dbee56f49248e81a74da1ff6a758208e
-  requires_dist:
-  - numpy>=2.2,<3
-  - scipy>=1.14,<2
-  - numba>=0.60,<1 ; extra == 'test'
-  - pytest>=9,<10 ; extra == 'test'
-  - pytest-cov>=7,<8 ; extra == 'test'
-  - pytest-xdist>=3.8,<4 ; extra == 'test'
-  - ruff>=0.17,<0.18 ; extra == 'test'
-  - hypothesis>=6,<7 ; extra == 'test'
-  - pandas>=3.0,<4 ; extra == 'test'
-  - polars>=1.43.2,<2 ; extra == 'test'
-  - pyarrow>=17,<26 ; extra == 'test'
-  - ty==0.0.89 ; extra == 'typecheck'
-  requires_python: '>=3.13'
 - pypi: https://files.pythonhosted.org/packages/a7/03/921a3d3c75785aca9ebfbfcabfbc3a1be12e2ab5265deb026d55a5a3f83e/tqdm-4.70.1-py3-none-any.whl
   name: tqdm
   version: 4.70.1

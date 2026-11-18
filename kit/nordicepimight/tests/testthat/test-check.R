@@ -371,6 +371,8 @@ test_that("the site's own multiple-birth column replaces sets found from birth d
   result <- check_fixture(function(s) {
     s$site$multiple_birth_column <- "delivery"
     s$pedigree[, delivery := fifelse(id %in% c("c4", "c5"), "D1", NA_character_)]
+    # pedsum clears a register set whose births are more than 7 days apart.
+    s$pedigree[id %in% c("c4", "c5"), birth_date := "1951-05-01"]
     s$pedigree[id %in% c("c1", "c2"), birth_date := "1950-02-01"]
     # Same-sex pairs, so that only the sets decide which leave FS.
     s$pedigree[id %in% c("c2", "c5"), sex := c(1, 2)]
@@ -387,6 +389,7 @@ test_that("pedsum's own set numbers become multiple_birth_set, whatever the regi
   result <- check_fixture(function(s) {
     s$site$multiple_birth_column <- "delivery"
     s$pedigree[, delivery := "."][id == "c4", delivery := "D7"][id == "c5", delivery := "D7 "]
+    s$pedigree[id %in% c("c4", "c5"), birth_date := "1951-05-01"]
     s
   }, pedsum = TRUE)
   expect_equal(codes(result, "STOP"), character())
