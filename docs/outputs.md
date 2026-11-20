@@ -38,11 +38,13 @@ Reading the estimate tables:
 
 - `level` is `stratum` for one stratum and `pooled` for the fixed-effect pool of the strata.
   `n_strata` counts the strata that entered; a note says when some did not.
-- `age_min` and `age_max`: a stratum's estimate is for one age. For h² it is the oldest
-  age that the population and family-history CIF curves share at which EPIMIGHT gave an h²
-  above 1e-10; a note says when an older shared age had none. Each CIF curve runs to the
-  end of its follow-up. For rg, it is the oldest age that both traits' CIF curves, the
-  cross curve and both h² tables share. The pooled row gives the range over its strata.
+- `age_min` and `age_max`: the ages a stratum's estimate reads. For h² there is one: the
+  oldest age that the population and family-history CIF curves share at which EPIMIGHT
+  gave an h² above 1e-10; a note says when an older shared age had none. Each CIF curve
+  runs to the end of its follow-up. rg reads each input at its own age: the index trait's
+  population and cross curves at the last age they share, the relatives trait's
+  population curve at its last age, and each h² at its last row above 1e-10. `age_min`
+  and `age_max` span those four ages. The pooled row gives the range over its strata.
 - Report the sandwich interval (`l95_sandwich`, `u95_sandwich`). `se_native` treats every
   relative pair as independent and is there only for comparison.
 - Intervals are not cut to [0, 1]: an h² interval can go below 0 or above 1 in a small
@@ -50,7 +52,8 @@ Reading the estimate tables:
 - When EPIMIGHT can't estimate a stratum or an analysis, the row stays, with NA values and
   a note giving the reason. In the oldest birth cohorts this is common: their parents
   often have no trait rows, so they have no affected parent to count.
-- `rhh` is `rg × sqrt(h2_index_at_age × h2_relatives_at_age)`, at the age rg uses.
+- `rhh` is `rg × sqrt(h2_index_at_age × h2_relatives_at_age)`, each h² at the age rg read
+  it.
 - In `cif.tsv`, `cohort` is `population` (everyone with the trait's rows),
   `family_history` (probands with an affected relative of the relationship, for h²) or
   `cross` (probands whose relative has the other trait, for rg). Each curve starts with a

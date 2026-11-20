@@ -13,9 +13,9 @@ requires-pixi = ">=0.84.1,<0.85"
 
 [dependencies]
 r-base = "4.5.*"
-# epimight 2.2.0's Imports (its DESCRIPTION), less parallel (base R) and pedigreegraph.
+# epimight 2.2.0's Imports at the pinned commit (its DESCRIPTION), less parallel (base R) and
+# pedigreegraph.
 r-r6 = "*"
-r-cmprsk = "*"
 "r-data.table" = "*"
 r-dplyr = "*"
 r-dtplyr = "*"

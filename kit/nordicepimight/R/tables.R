@@ -17,6 +17,7 @@ NOTES <- list(
   not_pooled = "%d of %d strata did not enter the pool",
   no_relative_rows = "no %s rows for trait %s",
   no_affected_relative = "no proband with a %s relative affected by %s",
+  no_proband = "no proband with rows for %s",
   no_case = "no case of %s",
   no_case_with_relative = "no case of %s among probands with a %s relative affected by %s",
   rg_join_empty = "no age shared by the CIFs and both h2 tables",
@@ -27,6 +28,7 @@ NOTES <- list(
 STOP_MESSAGES <- c(
   no_relative_rows = "No family history TTE data found",
   no_affected_relative = "No probands with at least 1 relative",
+  no_proband = "No proband TTE data found for trait",
   no_case = "No proband has a cause-1 event",
   no_case_with_relative = "No proband has a cause-1 event",
   rg_join_empty = "After joining all cif and h2 results no data was left",
@@ -104,8 +106,10 @@ cohort_cause <- function(facts, of_trait, of_relationship) {
   NULL
 }
 
-# The stop EPIMIGHT raises on one CIF curve: the relatives' empty-cohort stops, then no case.
+# The stop EPIMIGHT raises on one CIF curve, in get_tte's and run_cif's order: no proband,
+# the relatives' empty-cohort stops, then no case.
 curve_cause <- function(facts, index, relatives = NA, relationship = NA) {
+  if (nrow(curve_rows(facts, index)) == 0) return(cause("no_proband", index))
   if (!is.na(relationship)) {
     found <- cohort_cause(facts, relatives, relationship)
     if (!is.null(found)) return(found)
@@ -126,22 +130,41 @@ h2_cause <- function(facts, trait, relationship) {
 
 last_rows <- function(d, stratify) d[order(age)][, .SD[.N], by = stratify]
 
-# Each stratum's rg age and both h2 values there, as rg_estimates joins the five tables
-# (Pipeline-class.R:43-101). NULL when one of them is missing.
+RG_AGES <- c("age_kc", "age_kf", "age_h2_t1", "age_h2_t2")
+
+# Each stratum's rg inputs as rg_estimates reads them (Pipeline-class.R:43-79), each at its own
+# last age: the index trait's population and cross curves at the last age they share (age_kc),
+# the relatives trait's population curve at its last age (age_kf), and each h2 at its table's
+# last row with a finite h2 above 0 (age_h2_t1, age_h2_t2, and the h2 values there), joined on
+# the strata. NULL when one of the five tables is missing.
 rg_ages <- function(results, i, j, rel, stratify) {
   keys <- c("age", stratify)
-  tables <- list(results[[job_id("cif", i)]], results[[job_id("cif", i, j, rel)]],
-                 results[[job_id("cif", j)]], results[[job_id("h2", i, i, rel)]],
-                 results[[job_id("h2", j, j, rel)]])
-  if (any(vapply(tables, is.null, logical(1)))) {
+  pop_i <- results[[job_id("cif", i)]]
+  cross <- results[[job_id("cif", i, j, rel)]]
+  pop_j <- results[[job_id("cif", j)]]
+  h2_i <- results[[job_id("h2", i, i, rel)]]
+  h2_j <- results[[job_id("h2", j, j, rel)]]
+  if (any(vapply(list(pop_i, cross, pop_j, h2_i, h2_j), is.null, logical(1)))) {
     return(NULL)
   }
-  joined <- Reduce(function(a, b) merge(a, b, by = keys), list(
-    tables[[1]][, ..keys], tables[[2]][, ..keys], tables[[3]][, ..keys],
-    tables[[4]][, c(keys, "h2"), with = FALSE][, .(age, h2_index_at_age = h2), by = stratify],
-    tables[[5]][, c(keys, "h2"), with = FALSE][, .(age, h2_relatives_at_age = h2), by = stratify]
+  last_age <- function(d, name) setnames(last_rows(d[, ..keys], stratify), "age", name)
+  last_h2 <- function(d, age_name, h2_name) {
+    usable <- d[is.finite(h2) & h2 > 0, c(keys, "h2"), with = FALSE]
+    setnames(last_rows(usable, stratify), c("age", "h2"), c(age_name, h2_name))
+  }
+  Reduce(function(a, b) merge(a, b, by = stratify), list(
+    last_age(merge(pop_i[, ..keys], cross[, ..keys], by = keys), "age_kc"),
+    last_age(pop_j, "age_kf"),
+    last_h2(h2_i, "age_h2_t1", "h2_index_at_age"),
+    last_h2(h2_j, "age_h2_t2", "h2_relatives_at_age")
   ))
-  last_rows(joined, stratify)
+}
+
+# The strata and the four read ages, as numbers, for comparing a rebuild with EPIMIGHT's rg.
+rg_age_keys <- function(d, stratify) {
+  d <- unique(d[, c(stratify, RG_AGES), with = FALSE])
+  for (col in RG_AGES) set(d, j = col, value = as.numeric(d[[col]]))
+  d
 }
 
 # rg_ages for every rg call, by its job id; computed once and shared.
@@ -219,13 +242,17 @@ classify_jobs <- function(jobs, facts, results, stratify,
       notes[[job$job]] <- predicted$text
     } else if (job$kind == "rg") {
       at <- ages[[job$job]]
-      only <- function(a, b) nrow(fsetdiff(unique(a[, ..stratify]), unique(b[, ..stratify])))
-      rg <- results[[job$job]]
-      if (!is.null(at) && (only(at, rg) > 0 || only(rg, at) > 0)) {
-        mismatch <- finding("rg_age_rebuild_mismatch",
-                            sprintf("%s: rebuilt rg ages cover %d strata, EPIMIGHT's rg %d",
-                                    job$job, nrow(at), nrow(rg)))
-        findings <- c(findings, list(mismatch))
+      if (!is.null(at)) {
+        rebuilt <- rg_age_keys(at, stratify)
+        used <- rg_age_keys(results[[job$job]], stratify)
+        differ <- nrow(fsetdiff(rebuilt, used)) + nrow(fsetdiff(used, rebuilt))
+        if (differ > 0) {
+          mismatch <- finding("rg_age_rebuild_mismatch",
+                              sprintf(paste("%s: the rebuilt rg strata and ages differ from",
+                                            "EPIMIGHT's in %d rows (%d rebuilt, %d in its rg)"),
+                                      job$job, differ, nrow(rebuilt), nrow(used)))
+          findings <- c(findings, list(mismatch))
+        }
       }
     }
   }
@@ -319,11 +346,14 @@ rg_block <- function(a, facts, results, notes, stratify, ages) {
     rg <- copy(results[[id]])
     setnames(rg, names(ESTIMATE_RENAME), ESTIMATE_RENAME)
     rg[, present := TRUE]
-    at <- rg_ages_of(ages, i, j, rel)
-    strata <- merge(merge(expected, at, by = stratify, all.x = TRUE), rg, by = stratify,
+    h2_at <- rg_ages_of(ages, i, j, rel)[, c(stratify, "h2_index_at_age", "h2_relatives_at_age"),
+                                         with = FALSE]
+    strata <- merge(merge(expected, rg, by = stratify, all.x = TRUE), h2_at, by = stratify,
                     all.x = TRUE)
     strata[is.na(present), present := FALSE]
-    strata[, `:=`(level = "stratum", age_min = age, age_max = age, n_strata = as.integer(present),
+    strata[, `:=`(level = "stratum", age_min = pmin(age_kc, age_kf, age_h2_t1, age_h2_t2),
+                  age_max = pmax(age_kc, age_kf, age_h2_t1, age_h2_t2),
+                  n_strata = as.integer(present),
                   rhh = rg * sqrt(h2_index_at_age * h2_relatives_at_age))]
     strata[, note := join_notes(ifelse(!present, NOTES$rg_absent, NA),
                                 ifelse(sandwich_missing(strata), NOTES$sandwich_negative, NA))]
@@ -334,8 +364,8 @@ rg_block <- function(a, facts, results, notes, stratify, ages) {
   } else {
     entered <- strata[is.finite(rg) & is.finite(se_native)]
     d <- copy(results[[pooled_id]])[, n_strata := nrow(entered)]
-    pooled_values(d, "rg", nrow(expected))[, `:=`(age_min = min(entered$age),
-                                                  age_max = max(entered$age))]
+    pooled_values(d, "rg", nrow(expected))[, `:=`(age_min = min(entered$age_min),
+                                                  age_max = max(entered$age_max))]
   }
   pooled[, level := "pooled"]
   columns <- rg_columns(stratify)
