@@ -6,6 +6,14 @@ Amended 2026-11-17: "Step 0" below is `pixi run setup`. The kit now calls it set
 uses step 0 for the site's data preparation (`docs/step-0.md`). Setup also installs the
 kit's own package, `nordicepimight`.
 
+Amended 2026-11-20: the pin moved from BioPsyk/epimight's `sandwich` branch to the fork
+branch `rwaples/epimight@epimight-wcinc` (`bb8263d`), which descends from the old pin
+`55803e1`. It computes every CIF with one weighted cumulative incidence (cmprsk's
+estimator and variance, also for the weighted curves), reads h² and rg at the end of
+follow-up, drops h² at or below 1e-10, and stops `run_cif` on a curve with no case. The
+kit's self-test reference comes from the Python port that matches this branch. The pin
+returns to a BioPsyk commit once BioPsyk merges these changes.
+
 ## Context
 
 The first version ran EPIMIGHT in BioPsyk's Docker image, pinned by digest. That image

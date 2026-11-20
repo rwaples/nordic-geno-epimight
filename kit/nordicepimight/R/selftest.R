@@ -135,30 +135,12 @@ compare_cif <- function(cif, expected_dir) {
     set(cif, j = k, value = as.character(cif[[k]]))
     set(expected, j = k, value = as.character(expected[[k]]))
   }
-  population <- expected$cohort == "population"
-  # EPIMIGHT reports NA at a weighted curve's first event age (lag of the running CIF,
-  # CumulativeIncidenceAnalysis-class.R:132); the reference reports the left limit, 0.
-  weighted <- expected[!population]
-  weighted[, first := age == min(age) & age > 0 & cif == 0, by = curve_keys]
-  lagged <- sum(weighted$first)
-  weighted[first == TRUE, cif := NA_real_][, first := NULL]
-  # cmprsk::cuminc puts the unweighted population curve on a grid from age 0 to the last
-  # follow-up age (:173-185); drop the rows the reference, at event ages only, lacks.
-  pop_expected <- expected[population]
-  last <- pop_expected[, .(last = max(age)), by = curve_keys]
-  pop_kit <- merge(cif[cohort == "population"], last, by = curve_keys, all.x = TRUE)
   key_age <- c(curve_keys, "age")
-  only_kit <- fsetdiff(pop_kit[, ..key_age], pop_expected[, ..key_age])
-  grid <- merge(only_kit, pop_kit, by = key_age)[(age == 0 & cif == 0 & cases == 0) | age > last]
-  pop_kit <- pop_kit[!grid[, ..key_age], on = key_age]
   rbind(
-    compare_tables(sprintf("toy: cif family history and cross (%d first-row 0 read as NA)", lagged),
-                   cif[cohort != "population"], weighted, key_age,
-                   c("cif", "se_native", "cases")),
-    compare_tables(sprintf("toy: cif population (%d cuminc grid rows dropped)", nrow(grid)),
-                   pop_kit[, !"last"], pop_expected, key_age, c("cif", "cases")),
-    item("toy: cif population se_native", "SKIP",
-         "EPIMIGHT's population SE is cmprsk::cuminc's variance, which has no Python reference")
+    compare_tables("toy: cif family history and cross", cif[cohort != "population"],
+                   expected[cohort != "population"], key_age, c("cif", "se_native", "cases")),
+    compare_tables("toy: cif population", cif[cohort == "population"],
+                   expected[cohort == "population"], key_age, c("cif", "se_native", "cases"))
   )
 }
 

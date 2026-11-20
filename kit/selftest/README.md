@@ -36,9 +36,9 @@ It copies the toy into `OUT/`, turning ids into text and renaming three probands
 `1` and `1.0`, and adds one analysis, `h2_unestimable`, that has no affected relative.
 It runs every step in `OUT/run/` and checks:
 
-- the h², rg and CIF estimates against fitACE_epimight's independent Python values in
-  `expected/h2.tsv`, `expected/rg.tsv` and `expected/cif.tsv` (EPIMIGHT's population CIF
-  SE has no Python reference and is a SKIP);
+- the h², rg and CIF estimates and their native SEs against fitACE_epimight's independent
+  Python values in `expected/h2.tsv`, `expected/rg.tsv` and `expected/cif.tsv`, written by
+  its `scripts/kit_selftest_expected.py` at `8243554` (branch `epimight-wcinc`);
 - that `001`, `1` and `1.0` stay three people;
 - that `h2_unestimable` comes out as NA rows with a note;
 - that `OUT/run/6_export/` holds only the shareable files, no count from 1 to

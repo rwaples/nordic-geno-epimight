@@ -68,7 +68,7 @@ a trait file holds one row per person.
    (`kit/nordicepimight/R/epimight.R:7`). EPIMIGHT's random-effects weight is
    1/(se² + var(estimates)), the sample variance of the stratum estimates rather than a
    between-stratum variance such as DerSimonian-Laird's τ² (`R/Analysis-class.R:104` at
-   the pinned commit `55803e1`). It also needs at least two strata
+   `55803e1`, the kit's earlier EPIMIGHT pin). It also needs at least two strata
    (`R/Pipeline-class.R:257`). This needs settling before the kit switches.
 
 5. **Mental x CVD rg with W1 h² (6.5, Table 7).** The SAP's parent-offspring rg uses
