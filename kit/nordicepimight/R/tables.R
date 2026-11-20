@@ -10,12 +10,15 @@
 NOTES <- list(
   no_positive_h2 = "no age with positive h2",
   stratum_no_affected_relative = "no proband in this stratum with a %s relative affected by %s",
-  truncated = "h2 at age %d; last event age %d (later ages had h2 <= 0)",
+  stratum_no_case = "no case of %s among this stratum's probands with a %s relative affected by %s",
+  truncated = "h2 at age %d; the CIFs share ages up to %d, where h2 was not above 1e-10",
   sandwich_negative = "sandwich variance negative; interval unavailable",
   rg_absent = "rg needs both h2 and a shared age",
   not_pooled = "%d of %d strata did not enter the pool",
   no_relative_rows = "no %s rows for trait %s",
   no_affected_relative = "no proband with a %s relative affected by %s",
+  no_case = "no case of %s",
+  no_case_with_relative = "no case of %s among probands with a %s relative affected by %s",
   rg_join_empty = "no age shared by the CIFs and both h2 tables",
   no_poolable_stratum = "no stratum with a positive h2 and SE",
   no_poolable_rg = "no stratum with a finite rg and SE to pool"
@@ -24,6 +27,8 @@ NOTES <- list(
 STOP_MESSAGES <- c(
   no_relative_rows = "No family history TTE data found",
   no_affected_relative = "No probands with at least 1 relative",
+  no_case = "No proband has a cause-1 event",
+  no_case_with_relative = "No proband has a cause-1 event",
   rg_join_empty = "After joining all cif and h2 results no data was left",
   no_poolable_stratum = "No stratum has a finite h2 with a positive SE"
 )
@@ -55,14 +60,41 @@ conform <- function(d, columns) {
 
 cause <- function(code, ...) list(code = code, text = sprintf(NOTES[[code]], ...))
 
-# Strata per trait and, per trait and relationship, the cohort-table rows and those with an
-# affected relative: what decides EPIMIGHT's empty-cohort stops (Pipeline-class.R:724-757).
-cohort_facts <- function(cohort, stratify) {
+# Strata per trait; per trait and relationship, the cohort-table rows and those with an
+# affected relative; and per CIF curve the jobs draw and stratum, its probands and cases. These
+# decide EPIMIGHT's empty-cohort stops (Pipeline-class.R:728-764, get_tte) and its no-case stop
+# (:837-849, run_cif); a stratum without a case has no CIF row.
+cohort_facts <- function(cohort, stratify, jobs) {
   list(
     strata = cohort[, unique(.SD), by = trait, .SDcols = stratify],
     relatives = cohort[, .(rows = .N, affected = sum(relatives_n_trait > 0)),
-                       by = .(trait, relationship = relatives_kind)]
+                       by = .(trait, relationship = relatives_kind)],
+    curves = curve_counts(cohort, stratify, unique(jobs[kind == "cif", .(index_trait,
+                                                                         relatives_trait,
+                                                                         relationship)]))
   )
+}
+
+# A curve's probands as get_tte takes them: each person's first row of the index trait, kept
+# only with an affected relative of the relationship when the curve has one.
+curve_counts <- function(cohort, stratify, curves) {
+  first <- unique(cohort[, c("trait", "person_id", "trait_status", stratify), with = FALSE],
+                  by = c("trait", "person_id"))
+  rbindlist(lapply(seq_len(nrow(curves)), function(k) {
+    curve <- curves[k]
+    probands <- first[trait == curve$index_trait]
+    if (!is.na(curve$relationship)) {
+      affected <- cohort[trait == curve$relatives_trait & relatives_kind == curve$relationship &
+                           relatives_n_trait > 0, .(person_id)]
+      probands <- probands[affected, on = "person_id", nomatch = NULL]
+    }
+    counts <- probands[, .(probands = .N, cases = sum(trait_status == 1L)), keyby = stratify]
+    counts[, names(curve) := curve]
+  }), use.names = TRUE)
+}
+
+curve_rows <- function(facts, index, relatives = NA, kind = NA) {
+  facts$curves[index_trait == index & relatives_trait %in% relatives & relationship %in% kind]
 }
 
 cohort_cause <- function(facts, of_trait, of_relationship) {
@@ -70,6 +102,26 @@ cohort_cause <- function(facts, of_trait, of_relationship) {
   if (nrow(r) == 0) return(cause("no_relative_rows", of_relationship, of_trait))
   if (r$affected == 0) return(cause("no_affected_relative", of_relationship, of_trait))
   NULL
+}
+
+# The stop EPIMIGHT raises on one CIF curve: the relatives' empty-cohort stops, then no case.
+curve_cause <- function(facts, index, relatives = NA, relationship = NA) {
+  if (!is.na(relationship)) {
+    found <- cohort_cause(facts, relatives, relationship)
+    if (!is.null(found)) return(found)
+  }
+  if (sum(curve_rows(facts, index, relatives, relationship)$cases) > 0) return(NULL)
+  if (is.na(relationship)) {
+    cause("no_case", index)
+  } else {
+    cause("no_case_with_relative", index, relationship, relatives)
+  }
+}
+
+# The first stop of an h2 call, which draws the population curve and then the family history
+# (native_h2, Pipeline-class.R:340-341).
+h2_cause <- function(facts, trait, relationship) {
+  curve_cause(facts, trait) %||% curve_cause(facts, trait, trait, relationship)
 }
 
 last_rows <- function(d, stratify) d[order(age)][, .SD[.N], by = stratify]
@@ -112,10 +164,10 @@ nothing_to_pool <- function(rg) {
 predict_stop <- function(job, facts, results, stratify, ages) {
   rel <- job$relationship
   switch(job$kind,
-    cif = if (!is.na(rel)) cohort_cause(facts, job$relatives_trait, rel),
-    h2 = cohort_cause(facts, job$index_trait, rel),
+    cif = curve_cause(facts, job$index_trait, job$relatives_trait, rel),
+    h2 = h2_cause(facts, job$index_trait, rel),
     h2_pooled = {
-      found <- cohort_cause(facts, job$index_trait, rel)
+      found <- h2_cause(facts, job$index_trait, rel)
       h2 <- results[[job_id("h2", job$index_trait, job$index_trait, rel)]]
       if (is.null(found) && !is.null(h2)) {
         usable <- last_rows(h2, stratify)[is.finite(h2) & is.finite(se) & se > 0]
@@ -125,8 +177,12 @@ predict_stop <- function(job, facts, results, stratify, ages) {
     },
     rg = ,
     rg_pooled = {
-      found <- cohort_cause(facts, job$index_trait, rel) %||%
-        cohort_cause(facts, job$relatives_trait, rel)
+      # rg_estimates draws both population curves, both h2s, then the cross curve (:52-56).
+      i <- job$index_trait
+      j <- job$relatives_trait
+      found <- curve_cause(facts, i) %||% curve_cause(facts, j) %||%
+        curve_cause(facts, i, i, rel) %||% curve_cause(facts, j, j, rel) %||%
+        curve_cause(facts, i, j, rel)
       at <- rg_ages_of(ages, job$index_trait, job$relatives_trait, rel)
       if (is.null(found) && !is.null(at) && nrow(at) == 0) found <- cause("rg_join_empty")
       found
@@ -219,15 +275,18 @@ h2_block <- function(a, facts, results, notes, stratify) {
     keys <- c("age", stratify)
     both <- merge(pop[, ..keys], fh[, ..keys], by = keys)
     last_event <- both[, .(last_event = max(age)), by = stratify]
-    in_fh <- unique(fh[, ..stratify])[, in_fh := TRUE]
+    counts <- curve_rows(facts, trait, trait, rel)[, c(stratify, "probands", "cases"), with = FALSE]
     strata <- Reduce(function(x, y) merge(x, y, by = stratify, all.x = TRUE),
-                     list(expected, last, last_event, in_fh))
+                     list(expected, last, last_event, counts))
     strata[is.na(present), present := FALSE]
-    strata[is.na(in_fh), in_fh := FALSE]
+    strata[is.na(probands), `:=`(probands = 0L, cases = 0L)]
     strata[, `:=`(level = "stratum", age_min = age, age_max = age, n_strata = as.integer(present))]
     strata[, note := join_notes(
-      ifelse(!present & !in_fh, sprintf(NOTES$stratum_no_affected_relative, rel, trait), NA),
-      ifelse(!present & in_fh, NOTES$no_positive_h2, NA),
+      ifelse(!present & probands == 0, sprintf(NOTES$stratum_no_affected_relative, rel, trait),
+             NA),
+      ifelse(!present & probands > 0 & cases == 0,
+             sprintf(NOTES$stratum_no_case, trait, rel, trait), NA),
+      ifelse(!present & cases > 0, NOTES$no_positive_h2, NA),
       ifelse(present & age < last_event, sprintf(NOTES$truncated, as.integer(age),
                                                  as.integer(last_event)), NA),
       ifelse(sandwich_missing(strata), NOTES$sandwich_negative, NA)
@@ -307,7 +366,7 @@ cif_rows <- function(a, results, stratify) {
 
 # The unrounded tables, or NULL with the findings that stop the run.
 build_tables <- function(analyses, cohort, epimight, stratify) {
-  facts <- cohort_facts(cohort, stratify)
+  facts <- cohort_facts(cohort, stratify, epimight$jobs)
   results <- epimight$results
   verdict <- classify_jobs(epimight$jobs, facts, results, stratify)
   if (has_stop(verdict$findings)) {
