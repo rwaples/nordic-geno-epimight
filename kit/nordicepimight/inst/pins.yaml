@@ -2,8 +2,8 @@
 # if it differs from these (ADR 0002). Moving a pin means rerunning setup and the self-test.
 epimight:
   repo: rwaples/epimight
-  branch: epimight-wcinc
-  commit: bb8263d6f7dd052587c8583fb104dae83eda0dc1
+  branch: master
+  commit: 779c568b59862df1e73617e73c2b396d05c3fa39
   version: 2.2.0
 pedigreegraph:
   repo: rwaples/pedigree-graph

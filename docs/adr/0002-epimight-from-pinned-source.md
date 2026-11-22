@@ -14,6 +14,10 @@ follow-up, drops h² at or below 1e-10, and stops `run_cif` on a curve with no c
 kit's self-test reference comes from the Python port that matches this branch. The pin
 returns to a BioPsyk commit once BioPsyk merges these changes.
 
+Amended 2026-11-22: the pin moved to the fork's `master` (`779c568`), which merges
+`epimight-wcinc` and adds no change to the estimates. It adds documentation and a stop on a
+meta-analyzed CIF with no row to pool, which the kit never runs (it meta-analyzes only rg).
+
 ## Context
 
 The first version ran EPIMIGHT in BioPsyk's Docker image, pinned by digest. That image
