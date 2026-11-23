@@ -14,7 +14,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 # The kit release this image holds. The docker workflow checks on each v* tag that this
 # default is that tag, so imagelib's copy builds the release CI tested; bump it, and
 # VERSION, at each release.
-ARG NGE_REF=v0.1.1
+ARG NGE_REF=v0.2.0
 
 LABEL org.opencontainers.image.title="nordic-geno-epimight" \
       org.opencontainers.image.description="Runs EPIMIGHT heritability and genetic-correlation analyses on Nordic register pedigrees" \

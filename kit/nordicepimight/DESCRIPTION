@@ -1,6 +1,6 @@
 Package: nordicepimight
 Title: Build EPIMIGHT's Cohort Table and Run It on Register Data
-Version: 0.1.1
+Version: 0.2.0
 Authors@R: person("Ryan", "Waples", email = "ryan.waples@gmail.com", role = c("aut", "cre"))
 Description: The functions behind the nordic-geno-epimight kit's steps: checking the
     pedigree and trait files, building EPIMIGHT's cohort table, running EPIMIGHT, and
